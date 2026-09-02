@@ -2,6 +2,8 @@
 
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
@@ -108,6 +110,18 @@ class SessionSerializer(serializers.Serializer[dict[str, object]]):
     created_at = serializers.DateTimeField()
     last_seen_at = serializers.DateTimeField()
     current = serializers.BooleanField()
+
+
+class CsrfView(APIView):
+    """GET /auth/csrf — sets the csrftoken cookie for SPAs that mutate before logging in."""
+
+    authentication_classes: list[type] = []
+    permission_classes = [AllowAny]
+
+    @method_decorator(ensure_csrf_cookie)
+    @extend_schema(responses={204: None}, auth=[])
+    def get(self, request: Request) -> Response:
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class LoginView(APIView):

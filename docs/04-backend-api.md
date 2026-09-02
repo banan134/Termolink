@@ -15,6 +15,7 @@ Konwencje:
 
 | Metoda | Ścieżka | Opis |
 |---|---|---|
+| GET | `/auth/csrf` | 204; ustawia cookie `csrftoken` (SPA przed pierwszą mutacją) |
 | POST | `/auth/login` | `{email, password, totp?}` → 200 `{user: …jak /auth/me}` + sesja; 401 `invalid_credentials`; 428 `totp_required`; 429 `login_locked` (`retry_after_s`); throttling 5/min/IP |
 | POST | `/auth/logout` | |
 | GET | `/auth/me` | `{id, email, role, tenant: {id,name} \| null, totp_enabled, allowed_tenants[], ui_theme}` |
