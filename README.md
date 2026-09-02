@@ -34,6 +34,7 @@ docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml up 
 ## Stan prac
 
 Etap 1 (fundament) z [`docs/13-roadmap.md`](docs/13-roadmap.md) — zadanie 1: szkielet repozytorium.
-Backend etapu 1 (konta, RLS, auth z 2FA, audit, kolejka `jobs`, `seed_demo`) działa; trwa frontend
-(zadania 10–11) i testy izolacji (12). `make seed` tworzy operatora `admin@termolink.local` (z TOTP —
+Backend etapu 1 (konta, RLS, auth z 2FA, audit, kolejka `jobs`, `seed_demo`) i frontend (logowanie
+z 2FA, reset hasła, zaproszenia, `/account`: motyw, hasło, 2FA z QR, sesje) działają; zostały testy
+izolacji i API operatora (zadanie 12). Typy TS z OpenAPI: `docker compose … exec frontend npm run gen:types`. `make seed` tworzy operatora `admin@termolink.local` (z TOTP —
 sekret wypisany na stdout), serwisanta i 2 klientów demo; hasło wszystkich kont = `DEV_ADMIN_PASSWORD`.
