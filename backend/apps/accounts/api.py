@@ -51,6 +51,56 @@ class PasswordChangeSerializer(serializers.Serializer[dict[str, str]]):
         return value
 
 
+class ReauthSerializer(serializers.Serializer[dict[str, str]]):
+    password = serializers.CharField(trim_whitespace=False)
+    totp = serializers.CharField(required=False, allow_blank=True, max_length=16)
+
+
+class TotpSetupSerializer(serializers.Serializer[dict[str, str]]):
+    secret = serializers.CharField()
+    otpauth_url = serializers.CharField()
+
+
+class TotpEnableSerializer(serializers.Serializer[dict[str, str]]):
+    code = serializers.CharField(max_length=16)
+
+
+class TotpBackupCodesSerializer(serializers.Serializer[dict[str, object]]):
+    backup_codes = serializers.ListField(child=serializers.CharField())
+
+
+class TotpDisableSerializer(serializers.Serializer[dict[str, str]]):
+    password = serializers.CharField(trim_whitespace=False)
+    code = serializers.CharField(max_length=16)
+
+
+class ResetRequestSerializer(serializers.Serializer[dict[str, str]]):
+    email = serializers.EmailField()
+
+
+class NewPasswordMixin(serializers.Serializer[dict[str, str]]):
+    def validate_password(self, value: str) -> str:
+        try:
+            validate_password(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages)) from exc
+        return value
+
+
+class ResetSerializer(NewPasswordMixin):
+    token = serializers.CharField(max_length=128)
+    password = serializers.CharField(trim_whitespace=False)
+
+
+class InvitationAcceptSerializer(NewPasswordMixin):
+    token = serializers.CharField(max_length=128)
+    password = serializers.CharField(trim_whitespace=False)
+
+
+class PasswordResetThrottle(AnonRateThrottle):
+    scope = "password_reset"
+
+
 class SessionSerializer(serializers.Serializer[dict[str, object]]):
     id = serializers.UUIDField()
     ip = serializers.IPAddressField(allow_null=True)
@@ -73,7 +123,7 @@ class LoginView(APIView):
             request._request,
             email=data.validated_data["email"],
             password=data.validated_data["password"],
-            totp=data.validated_data.get("totp") or None,
+            totp_code=data.validated_data.get("totp") or None,
         )
         return Response({"user": services.me_payload(request._request, user)})
 
@@ -124,6 +174,94 @@ class SessionDetailView(APIView):
     def delete(self, request: Request, session_id: str) -> Response:
         services.revoke_session(request._request, _user(request), session_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ReauthView(APIView):
+    @extend_schema(request=ReauthSerializer, responses={204: None})
+    def post(self, request: Request) -> Response:
+        data = ReauthSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        services.reauth(
+            request._request,
+            _user(request),
+            password=data.validated_data["password"],
+            totp_code=data.validated_data.get("totp") or None,
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class TotpSetupView(APIView):
+    @extend_schema(request=None, responses=TotpSetupSerializer)
+    def post(self, request: Request) -> Response:
+        return Response(services.totp_setup(request._request, _user(request)))
+
+
+class TotpEnableView(APIView):
+    @extend_schema(request=TotpEnableSerializer, responses=TotpBackupCodesSerializer)
+    def post(self, request: Request) -> Response:
+        data = TotpEnableSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        codes = services.totp_enable(
+            request._request, _user(request), code=data.validated_data["code"]
+        )
+        return Response({"backup_codes": codes})
+
+
+class TotpDisableView(APIView):
+    @extend_schema(request=TotpDisableSerializer, responses={204: None})
+    def post(self, request: Request) -> Response:
+        data = TotpDisableSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        services.totp_disable(
+            request._request,
+            _user(request),
+            password=data.validated_data["password"],
+            code=data.validated_data["code"],
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PasswordResetRequestView(APIView):
+    authentication_classes: list[type] = []
+    permission_classes = [AllowAny]
+    throttle_classes = [PasswordResetThrottle]
+
+    @extend_schema(request=ResetRequestSerializer, responses={204: None}, auth=[])
+    def post(self, request: Request) -> Response:
+        data = ResetRequestSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        services.request_password_reset(data.validated_data["email"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PasswordResetView(APIView):
+    authentication_classes: list[type] = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(request=ResetSerializer, responses={204: None}, auth=[])
+    def post(self, request: Request) -> Response:
+        data = ResetSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        services.reset_password(
+            token=data.validated_data["token"], new_password=data.validated_data["password"]
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class InvitationAcceptView(APIView):
+    authentication_classes: list[type] = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(request=InvitationAcceptSerializer, responses={200: MeSerializer}, auth=[])
+    def post(self, request: Request) -> Response:
+        data = InvitationAcceptSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        user = services.accept_invitation(
+            request._request,
+            token=data.validated_data["token"],
+            password=data.validated_data["password"],
+        )
+        return Response({"user": services.me_payload(request._request, user)})
 
 
 def _user(request: Request) -> User:

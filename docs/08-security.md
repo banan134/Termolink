@@ -11,13 +11,19 @@
   (1, 2, 4… min, max 30) liczone od ostatniej nieudanej próby; odpowiedź 429 `login_locked` z `retry_after_s`;
   udane logowanie czyści licznik konta. Własna tabela `login_attempts` (`03-data-model.md`). Adres IP
   z `X-Forwarded-For` (pierwszy wpis) — ufamy tylko własnemu Caddy.
-- 2FA TOTP (`pyotp`): **obowiązkowe** dla `superadmin` i `technician` (bez 2FA nie ma logowania;
-  egzekwowane flagą `REQUIRE_OPERATOR_TOTP`, włączaną razem z endpointami setup TOTP — etap 1, zadanie 6);
+- 2FA TOTP (`pyotp`, okno ±1 krok): **obowiązkowe** dla `superadmin` i `technician`: operator bez
+  włączonego TOTP po zalogowaniu ma dostęp wyłącznie do `/auth/me`, `/auth/logout` i `/auth/totp/*`
+  (403 `totp_setup_required` na pozostałych ścieżkach — `accounts.middleware.SessionPolicyMiddleware`),
+  więc może 2FA skonfigurować, ale nic więcej. Flaga `REQUIRE_OPERATOR_TOTP` (domyślnie włączona);
   **wymagane** dla `tenant_admin` do sterowania; opcjonalne dla `tenant_user`. 10 kodów zapasowych (hash).
 - Brak samodzielnej rejestracji; zaproszenia z tokenem (hash w DB), ważność 72 h, jednorazowe.
 - Reset hasła: token 30 min, jednorazowy, unieważnia sesje.
-- `reauth` (hasło + TOTP) dla operacji wrażliwych: komendy wrażliwe, zmiana trybu urządzenia,
-  zmiana e-maila, wyłączenie 2FA, odłączenie konta producenta. Ważność 5 min, w sesji.
+- `reauth` (hasło + TOTP, jeśli włączone) dla operacji wrażliwych: komendy wrażliwe, zmiana trybu urządzenia,
+  zmiana e-maila, wyłączenie 2FA, odłączenie konta producenta. Ważność 5 min, w sesji (`reauth_until`);
+  helper `accounts.services.require_reauth(request)` → 428 `reauth_required`.
+- Kody zapasowe: 10 kodów po 10 znaków hex, przechowywane jako SHA-256, jednorazowe; kod zapasowy zastępuje
+  TOTP przy logowaniu i reauth.
+- Sekret TOTP zaszyfrowany (`03-data-model.md` §Szyfrowanie, zakres `user:<id>`).
 
 ## Sesje
 

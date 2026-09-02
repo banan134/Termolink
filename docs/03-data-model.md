@@ -67,6 +67,9 @@ invitations (id uuid, tenant_id NULL, email, role, token_hash, expires_at, accep
 login_attempts (id bigserial, email_lower text, ip inet NULL, success boolean, ts timestamptz)
   -- blokada logowania (08-security.md); bez tenant_id (przed uwierzytelnieniem); indeksy (email_lower, ts), (ip, ts); retencja 7 dni
 
+password_reset_tokens (id uuid PK, user_id uuid, token_hash text UNIQUE, expires_at, used_at NULL, created_at)
+  -- 30 min, jednorazowe (08-security.md); bez tenant_id — używane wyłącznie w kontekście `system` przed logowaniem
+
 user_sessions (id uuid PK, session_key text UNIQUE, user_id uuid, tenant_id uuid NULL,
                ip inet NULL, user_agent text, created_at, last_seen_at)
   -- widok „aktywne sesje” + wylogowanie zdalne; wiersz usuwany razem z sesją Django; RLS jak users
@@ -217,8 +220,11 @@ Wzorce poza `device.`, `heating.circuits.`, `heating.dhw.`, `heating.burners.`, 
 ## Szyfrowanie tokenów
 
 - Klucz główny `TOKEN_MASTER_KEY` (32 B, base64) w env, **nie** w DB, **nie** w tym samym backupie.
-- Klucz per tenant: `HKDF(master, info=tenant_id)`. Algorytm: AES-256-GCM, nonce 12 B losowy,
-  format `v1|nonce|ciphertext|tag`. Moduł `providers/crypto.py`, wersjonowany dla rotacji.
+- Klucz per podmiot: `HKDF-SHA256(master, info=<scope>)`, gdzie `scope` = `tenant:<uuid>` dla tokenów
+  producenta i `user:<uuid>` dla sekretów TOTP (operatorzy nie mają tenanta). Algorytm: AES-256-GCM,
+  nonce 12 B losowy, format `v1|nonce|ciphertext|tag` (bajty). Wspólny moduł `apps/core/crypto.py`
+  (`encrypt(scope, plaintext)`, `decrypt(scope, blob)`), wersjonowany dla rotacji; `providers/crypto.py`
+  z etapu 2 używa go z zakresem `tenant:`.
 
 ## Retencja i objętość
 

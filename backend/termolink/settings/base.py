@@ -114,7 +114,10 @@ SESSION_ABSOLUTE_MAX_AGE = 7 * 24 * 3600  # hard cap enforced by SessionPolicyMi
 LOGIN_LOCKOUT_THRESHOLD = 10
 LOGIN_LOCKOUT_WINDOW_S = 30 * 60
 LOGIN_LOCKOUT_MAX_DELAY_S = 30 * 60
-REQUIRE_OPERATOR_TOTP = False  # flipped on together with TOTP setup endpoints (stage 1, task 6)
+REQUIRE_OPERATOR_TOTP = env.bool("REQUIRE_OPERATOR_TOTP", default=True)
+REAUTH_TTL_S = 5 * 60
+PASSWORD_RESET_TTL_S = 30 * 60
+TOTP_ISSUER = "Termolink"
 CSRF_COOKIE_NAME = "csrftoken"
 CSRF_COOKIE_HTTPONLY = False  # frontend reads it to send X-CSRFToken
 CSRF_COOKIE_SAMESITE = "Lax"
@@ -181,6 +184,7 @@ VIESSMANN_IAM_BASE: str = env(
 )
 VIESSMANN_MOCK: bool = env.bool("VIESSMANN_MOCK", default=False)
 OAUTH_REDIRECT_BASE: str = env("OAUTH_REDIRECT_BASE", default="http://localhost:8080")
+PUBLIC_BASE_URL: str = env("PUBLIC_BASE_URL", default=OAUTH_REDIRECT_BASE)
 _raw_retention = env("RAW_RETENTION_DAYS", default="").strip()
 RAW_RETENTION_DAYS: int | None = int(_raw_retention) if _raw_retention else None
 ALERT_EMAIL_OPERATOR: str = env("ALERT_EMAIL_OPERATOR", default="")

@@ -20,11 +20,11 @@ Konwencje:
 | GET | `/auth/me` | `{id, email, role, tenant: {id,name} \| null, totp_enabled, allowed_tenants[], ui_theme}` |
 | PATCH | `/auth/me` | `{ui_theme: 'light'\|'dark'}` |
 | POST | `/auth/password/change` | wymaga starego hasła; unieważnia inne sesje |
-| POST | `/auth/password/reset-request` / `/auth/password/reset` | tokeny jednorazowe, 30 min |
-| POST | `/auth/totp/setup` → `{secret, otpauth_url}`; POST `/auth/totp/enable {code}` → backup codes; POST `/auth/totp/disable {password, code}` | |
-| POST | `/auth/reauth` | `{password, totp?}` → krótkotrwały znacznik w sesji (`reauth_until`, 5 min) używany przez sterowanie i zmiany wrażliwe |
+| POST | `/auth/password/reset-request` `{email}` → zawsze 204 (e-mail z linkiem `PUBLIC_BASE_URL/reset?token=…`, throttling 3/h/IP) / `/auth/password/reset` `{token, password}` → 204; 400 `invalid_token` | tokeny jednorazowe, 30 min; reset unieważnia wszystkie sesje |
+| POST | `/auth/totp/setup` → `{secret, otpauth_url}` (sekret tymczasowo w sesji); POST `/auth/totp/enable {code}` → `{backup_codes[]}` (raz); POST `/auth/totp/disable {password, code}` (kod TOTP lub zapasowy) | |
+| POST | `/auth/reauth` | `{password, totp?}` → 204; 428 `totp_required` gdy 2FA włączone; ustawia `reauth_until` (5 min) w sesji; używane przez sterowanie i zmiany wrażliwe |
 | GET | `/auth/sessions` / DELETE `/auth/sessions/{id}` | aktywne sesje: `[{id, ip, user_agent, created_at, last_seen_at, current}]`; usunięcie bieżącej = wylogowanie |
-| POST | `/auth/invitations/accept` | `{token, password}` |
+| POST | `/auth/invitations/accept` | `{token, password}` → 200 `{user}` + sesja (użytkownik utworzony z roli/tenanta zaproszenia); 400 `invalid_token`; e-mail zaproszenia z linkiem `PUBLIC_BASE_URL/invite/<token>` |
 
 ## Operator: klienci (superadmin, technician w zakresie przypisań)
 
