@@ -20,6 +20,10 @@ _GRANTS = (
 )
 
 
+# Tables the runtime role may only INSERT into and SELECT from (docs/03: append-only).
+APPEND_ONLY_TABLES = ("audit_log",)
+
+
 def ensure_app_role(cursor: Any, raw_connection: Any) -> bool:
     """Create or update the app role. Returns True if the role was newly created."""
     user: str = settings.DB_APP_USER
@@ -38,4 +42,12 @@ def ensure_app_role(cursor: Any, raw_connection: Any) -> bool:
     )
     for statement in _GRANTS:
         cursor.execute(sql.SQL(statement).format(role=ident).as_string(raw_connection))
+    for table in APPEND_ONLY_TABLES:
+        cursor.execute("SELECT to_regclass(%s)", [table])
+        if cursor.fetchone()[0] is not None:
+            cursor.execute(
+                sql.SQL("REVOKE UPDATE, DELETE, TRUNCATE ON {table} FROM {role}")
+                .format(table=sql.Identifier(table), role=ident)
+                .as_string(raw_connection)
+            )
     return not exists

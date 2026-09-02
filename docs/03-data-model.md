@@ -171,7 +171,11 @@ commands (
 
 audit_log (
   id bigserial, tenant_id uuid NULL, user_id uuid NULL, action text, target_type text, target_id uuid NULL,
-  details jsonb, ip inet NULL, ts timestamptz)  -- append-only; brak UPDATE/DELETE dla roli aplikacji
+  details jsonb, ip inet NULL, ts timestamptz)  -- append-only: REVOKE UPDATE/DELETE/TRUNCATE dla roli aplikacji
+  -- (ponawiane przez ensure_app_db_role); RLS z tenant_id NULL dla działań operatora; zapis zawsze przez
+  -- `audit.services.audit()` w kontekście `system`; akcje: auth.login, auth.login.failed, auth.logout,
+  -- auth.password.changed|reset|reset_requested, auth.totp.enabled|disabled, auth.reauth,
+  -- auth.session.revoked, auth.invitation.issued|accepted, device.mode.changed, command.* (etap 4)
 ```
 
 ### Alarmy, raporty, zadania, słownik

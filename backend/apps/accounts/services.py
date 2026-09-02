@@ -12,6 +12,7 @@ from django.db.models import Q
 from django.http import HttpRequest
 from django.utils import timezone
 
+from apps.audit.services import audit
 from apps.core.exceptions import ApiError
 from apps.tenants.context import system_context
 
@@ -92,6 +93,11 @@ def login_user(request: HttpRequest, *, email: str, password: str, totp_code: st
     user = authenticate(request, username=email, password=password)
     if user is None or not user.is_active:
         record_attempt(email, ip, success=False)
+        audit(
+            "auth.login.failed",
+            request=request,
+            details={"email": email.lower(), "reason": "invalid_credentials"},
+        )
         raise ApiError("invalid_credentials", "Nieprawidłowy e-mail lub hasło.", status_code=401)
     assert isinstance(user, User)
 
@@ -102,10 +108,17 @@ def login_user(request: HttpRequest, *, email: str, password: str, totp_code: st
             )
         if not _check_second_factor(user, totp_code):
             record_attempt(email, ip, success=False)
+            audit(
+                "auth.login.failed",
+                request=request,
+                user=user,
+                details={"email": email.lower(), "reason": "invalid_totp"},
+            )
             raise ApiError("invalid_totp", "Nieprawidłowy kod 2FA.", status_code=401)
 
     record_attempt(email, ip, success=True)
     _start_session(request, user)
+    audit("auth.login", request=request, user=user, details={"totp": user.totp_enabled})
     return user
 
 
@@ -143,6 +156,9 @@ def logout_user(request: HttpRequest) -> None:
     key = request.session.session_key
     if key:
         UserSession.objects.filter(session_key=key).delete()
+    user = getattr(request, "user", None)
+    if user is not None and getattr(user, "is_authenticated", False):
+        audit("auth.logout", request=request, user=user)
     logout(request)
 
 
@@ -188,7 +204,10 @@ def change_password(request: HttpRequest, user: User, *, old: str, new: str) -> 
     new_key = request.session.session_key
     if old_key and new_key and old_key != new_key:
         UserSession.objects.filter(session_key=old_key).update(session_key=new_key)
-    revoke_other_sessions(user, keep_session_key=new_key)  # every other session is dropped
+    dropped = revoke_other_sessions(user, keep_session_key=new_key)
+    audit(
+        "auth.password.changed", request=request, user=user, details={"sessions_revoked": dropped}
+    )
 
 
 # --- sessions --------------------------------------------------------------------------------
@@ -219,6 +238,7 @@ def revoke_session(request: HttpRequest, user: User, session_id: str) -> None:
         return
     _delete_django_sessions([row.session_key])
     row.delete()
+    audit("auth.session.revoked", request=request, user=user, target=row)
 
 
 def revoke_other_sessions(user: User, *, keep_session_key: str | None) -> int:
@@ -266,6 +286,7 @@ def reauth(request: HttpRequest, user: User, *, password: str, totp_code: str | 
             raise ApiError("invalid_totp", "Nieprawidłowy kod 2FA.", status_code=401)
     until = timezone.now() + timedelta(seconds=settings.REAUTH_TTL_S)
     request.session[REAUTH_UNTIL_KEY] = until.isoformat()
+    audit("auth.reauth", request=request, user=user)
 
 
 def has_valid_reauth(request: HttpRequest) -> bool:
@@ -313,6 +334,7 @@ def totp_enable(request: HttpRequest, user: User, *, code: str) -> list[str]:
     user.totp_enabled = True
     user.save(update_fields=["totp_secret_enc", "backup_codes_hash", "totp_enabled"])
     del request.session[TOTP_PENDING_SECRET_KEY]
+    audit("auth.totp.enabled", request=request, user=user)
     return codes
 
 
@@ -330,6 +352,7 @@ def totp_disable(request: HttpRequest, user: User, *, password: str, code: str) 
     user.totp_enabled = False
     user.save(update_fields=["totp_secret_enc", "backup_codes_hash", "totp_enabled"])
     request.session.pop(REAUTH_UNTIL_KEY, None)
+    audit("auth.totp.disabled", request=request, user=user)
 
 
 # --- password reset --------------------------------------------------------------------------
@@ -348,6 +371,7 @@ def request_password_reset(email: str) -> None:
             expires_at=timezone.now() + timedelta(seconds=settings.PASSWORD_RESET_TTL_S),
         )
     emails.send_password_reset(user.email, token)
+    audit("auth.password.reset_requested", user=user)
 
 
 def reset_password(*, token: str, new_password: str) -> User:
@@ -365,7 +389,8 @@ def reset_password(*, token: str, new_password: str) -> User:
         PasswordResetToken.objects.filter(user=user, used_at__isnull=True).update(
             used_at=timezone.now()
         )
-        revoke_other_sessions(user, keep_session_key=None)
+        dropped = revoke_other_sessions(user, keep_session_key=None)
+    audit("auth.password.reset", user=user, details={"sessions_revoked": dropped})
     return user
 
 
@@ -381,6 +406,13 @@ def issue_invitation(
     )
     emails.send_invitation(
         invitation.email, token, tenant_name=tenant.name if tenant is not None else None
+    )
+    audit(
+        "auth.invitation.issued",
+        user=created_by,
+        tenant=tenant,
+        target=invitation,
+        details={"email": invitation.email, "role": role},
     )
     return invitation
 
@@ -402,4 +434,5 @@ def accept_invitation(request: HttpRequest, *, token: str, password: str) -> Use
         invitation.accepted_at = timezone.now()
         invitation.save(update_fields=["accepted_at"])
     _start_session(request, user)
+    audit("auth.invitation.accepted", request=request, user=user, target=invitation)
     return user

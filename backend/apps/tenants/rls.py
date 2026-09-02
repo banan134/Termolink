@@ -56,4 +56,5 @@ RLS_TABLES: dict[str, bool] = {
     "invitations": True,
     "tenant_memberships": False,
     "user_sessions": True,
+    "audit_log": True,
 }
