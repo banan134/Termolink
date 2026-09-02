@@ -82,7 +82,9 @@ HTTP 429 z `retry_at`. Rezerwa chroni sterowanie przed zagłodzeniem przez odczy
 
 Job pobierany przez `UPDATE jobs SET locked_by, locked_at WHERE id = (SELECT id … FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING *`.
 Job zablokowany > 10 min bez zakończenia → uznany za porzucony (worker padł) → odblokowany.
-Heartbeat workerów w tabeli `worker_heartbeats`; brak heartbeatu > 2 min → alert operatora.
+Heartbeat workerów w tabeli `worker_heartbeats` (upsert co tick, `03-data-model.md`); brak heartbeatu > 2 min → alert operatora.
+Handlery jobów rejestrowane dekoratorem `ingest.queue.job_handler(kind)`; każdy job wykonuje się w osobnej transakcji
+z kontekstem RLS `system` zawężonym do `tenant_id` joba.
 
 ## Metryki (endpoint `/admin/system/health` + logi)
 

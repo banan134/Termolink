@@ -29,11 +29,12 @@ INSTALLED_APPS = [
     "apps.tenants",
     "apps.accounts",
     "apps.audit",
+    "apps.ingest",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
 # auth.E003 wants unique=True on USERNAME_FIELD; we enforce UNIQUE (lower(email)) instead (docs/03).
-SILENCED_SYSTEM_CHECKS = ["auth.E003"]
+SILENCED_SYSTEM_CHECKS = ["auth.E003", "auth.W004"]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

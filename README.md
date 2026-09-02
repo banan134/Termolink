@@ -34,5 +34,5 @@ docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml up 
 ## Stan prac
 
 Etap 1 (fundament) z [`docs/13-roadmap.md`](docs/13-roadmap.md) — zadanie 1: szkielet repozytorium.
-`run_worker` jest na razie pustą pętlą z heartbeatem w logu; kolejka `jobs` i heartbeat w bazie
-powstaną w zadaniu 8. `make seed` (`seed_demo`) — zadanie 9.
+Kolejka `jobs` (PostgreSQL, `SKIP LOCKED`) i `run_worker` z heartbeatem w bazie działają; `make seed`
+(`seed_demo`) — zadanie 9.
