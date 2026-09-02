@@ -32,7 +32,7 @@ makemigrations:
 	$(COMPOSE) exec -e DJANGO_DB_ROLE=admin backend python manage.py makemigrations
 
 seed:
-	@echo "seed_demo is not implemented yet (stage 1, task 9)."
+	$(COMPOSE) exec backend python manage.py seed_demo
 
 test:
 	$(COMPOSE) exec backend pytest

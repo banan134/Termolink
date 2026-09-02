@@ -57,8 +57,9 @@ Pełna lista z `07-control-flow.md` §„Testy obowiązkowe” + walidacja const
 
 ## Dane testowe
 
-`manage.py seed_demo` tworzy: operatora, 2 klientów, po 2–3 urządzenia z fixtures, historię 30 dni
-(syntetyczną, oznaczoną jako demo) — tylko dla dev/staging, blokada na prod.
+`manage.py seed_demo` tworzy: operatora i serwisanta (z TOTP), 2 klientów z administratorem
+i użytkownikiem, po 2–3 urządzenia z fixtures, historię 30 dni (syntetyczną, oznaczoną jako demo —
+etap 2) — tylko dla dev, blokada poza `DJANGO_ENV=dev`.
 
 ## Pokrycie
 

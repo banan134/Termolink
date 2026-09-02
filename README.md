@@ -34,5 +34,6 @@ docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml up 
 ## Stan prac
 
 Etap 1 (fundament) z [`docs/13-roadmap.md`](docs/13-roadmap.md) — zadanie 1: szkielet repozytorium.
-Kolejka `jobs` (PostgreSQL, `SKIP LOCKED`) i `run_worker` z heartbeatem w bazie działają; `make seed`
-(`seed_demo`) — zadanie 9.
+Backend etapu 1 (konta, RLS, auth z 2FA, audit, kolejka `jobs`, `seed_demo`) działa; trwa frontend
+(zadania 10–11) i testy izolacji (12). `make seed` tworzy operatora `admin@termolink.local` (z TOTP —
+sekret wypisany na stdout), serwisanta i 2 klientów demo; hasło wszystkich kont = `DEV_ADMIN_PASSWORD`.
