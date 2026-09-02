@@ -48,8 +48,7 @@ jobs:
       - name: Install
         # Same source of truth as backend/Dockerfile: dependency lists from pyproject.toml.
         run: |
-          python -c "import tomllib;p=tomllib.load(open('pyproject.toml','rb'))['project'];print('
-'.join(p['dependencies']+p['optional-dependencies']['dev']))" > /tmp/req.txt
+          python -c "import tomllib;p=tomllib.load(open('pyproject.toml','rb'))['project'];print(*(p['dependencies']+p['optional-dependencies']['dev']),sep=chr(10))" > /tmp/req.txt
           pip install -r /tmp/req.txt
       - name: Ruff (lint + format)
         run: |
