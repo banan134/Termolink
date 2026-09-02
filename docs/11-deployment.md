@@ -42,7 +42,7 @@ services:
     env_file: .env
     volumes: [pgdata:/var/lib/postgresql/data]
     # brak ports: — dostęp tylko z sieci compose
-  backup:
+  backup:                                          # dodawany w etapie 6 (wymaga konfiguracji age/rclone)
     image: prodrigestivill/postgres-backup-local   # lub własny skrypt pg_dump + age + rclone
     env_file: .env
     volumes: [backups:/backups]
@@ -51,6 +51,7 @@ volumes: { pgdata: {}, media: {}, caddy_data: {}, backups: {}, frontend_dist: {}
 
 Frontend budowany w CI (`vite build`) → katalog `frontend_dist` serwowany przez Caddy; `/api/*`,
 `/oauth/*`, `/admin-django/*` (panel Django, tylko dla superadmina, za dodatkowym basic-auth w Caddy)
+oraz `/static/*` (pliki statyczne Django dla panelu i Swaggera, serwowane przez WhiteNoise)
 proxowane do `backend:8000`.
 
 ## `deploy/Caddyfile` (szkic)
@@ -65,7 +66,7 @@ app.termolink.example {
     X-Frame-Options DENY
     Permissions-Policy "camera=(), microphone=(), geolocation=()"
   }
-  @api path /api/* /oauth/* /admin-django/*
+  @api path /api/* /oauth/* /admin-django/* /static/*
   handle @api { reverse_proxy backend:8000 }
   handle { root * /srv/frontend; try_files {path} /index.html; file_server }
   # rate limiting: plugin caddy-ratelimit lub egzekwowanie w DRF

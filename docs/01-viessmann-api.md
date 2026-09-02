@@ -15,7 +15,7 @@
 - **[FAKT]** Redirect URI musi dokładnie odpowiadać temu, którego używa aplikacja; niezgodność daje
   błąd „Invalid redirection URI”.
 - Termolink używa: `https://<domena>/oauth/viessmann/callback` (produkcja) oraz
-  `http://localhost:8000/oauth/viessmann/callback` (dev) — **oba muszą być wpisane w portalu Viessmann**.
+  `http://localhost:8080/oauth/viessmann/callback` (dev, przez proxy Caddy — `15-local-development.md`) — **oba muszą być wpisane w portalu Viessmann**.
 
 ## 2. Autoryzacja (OAuth2 Authorization Code + PKCE)
 
