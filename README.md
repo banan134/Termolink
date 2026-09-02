@@ -1,5 +1,7 @@
 # Termolink
 
+[![CI](https://github.com/banan134/termolink/actions/workflows/ci.yml/badge.svg)](https://github.com/banan134/termolink/actions/workflows/ci.yml)
+
 Wielodostępowy portal monitoringu i sterowania urządzeniami grzewczymi (start: Viessmann).
 Dokumentacja projektu — źródło prawdy — jest w [`docs/`](docs/00-overview.md); zasady pracy
 w [`CLAUDE.md`](CLAUDE.md).
