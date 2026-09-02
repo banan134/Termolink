@@ -101,3 +101,4 @@ Przy pracy nad UI zatrzymuj worker (`docker compose stop worker`) albo ustaw `VI
 | docs/13-roadmap.md | Etapy 0–6 z kryteriami „gotowe” i zadaniami |
 | docs/14-open-questions.md | Nierozstrzygnięte pytania i rzeczy do weryfikacji |
 | docs/15-local-development.md | Uruchomienie lokalne w Dockerze, Makefile, praca z Claude Code lokalnie, mock API |
+| docs/16-etap-0-instrukcja.md | Krok po kroku: Client ID, skrypt `backend/scripts/viessmann_capture.py`, fixtures, test limitu |
