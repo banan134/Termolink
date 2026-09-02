@@ -38,12 +38,16 @@ w `01-viessmann-api.md` odhaczona.
 
 ## Etap 2 — Adapter Viessmann i odczyt
 
-- [ ] `adapters/base.py`, rejestr, `adapters/viessmann/` (client, auth, parser, errors) + testy na fixtures; tryb `VIESSMANN_MOCK=1` czytający fixtures.
-- [ ] `provider_accounts`, szyfrowanie tokenów (`crypto.py`), OAuth start/callback, discover, `discovered_devices`.
-- [ ] `devices`, `feature_definitions`, `feature_latest`, `feature_values` (hypertable, kompresja), agregaty 1h/1d, `grouping.py`.
-- [ ] Budżet (`budget.py`) + testy współbieżności; scheduler; poller; statusy; `api_calls`.
-- [ ] API: provider-accounts, devices (CRUD operatora), features, history, status-history, refresh.
-- [ ] Frontend: panel operatora (klienci, konto Viessmann, kreator dodawania urządzenia z trybem).
+- [x] `adapters/base.py`, rejestr, `adapters/viessmann/` (client, auth, parser, errors); tryb `VIESSMANN_MOCK=1`
+      czytający fixtures. **Testy parsera na fixtures włączają się automatycznie po etapie 0** (do tego czasu pomijane).
+- [x] `provider_accounts`, szyfrowanie tokenów (`core/crypto.py` + `providers/crypto.py`), OAuth start/callback, discover, `discovered_devices`.
+- [x] `devices`, `feature_definitions`, `feature_latest`, `feature_values` (hypertable, kompresja; izolacja widokami
+      `*_rls` — `03-data-model.md`), agregaty 1h/1d, `grouping.py`.
+- [x] Budżet (`budget.py`) + testy współbieżności; scheduler; poller; statusy; `api_calls`.
+- [x] API: provider-accounts, devices (CRUD operatora), features, history, status-history, refresh.
+- [x] Frontend: panel operatora (konto Viessmann, wykrywanie, dodawanie urządzenia z trybem), karty urządzeń
+      klienta (`/t/:tid`), karta urządzenia (tabela cech, prosty wykres SVG — ECharts w etapie 3).
+- [ ] **Weryfikacja na prawdziwym urządzeniu (wymaga etapu 0)**: parser na fixtures, 24 h na staging z logiem `api_calls`.
 
 **Gotowe:** urządzenie testowe widoczne, historia rośnie zgodnie z budżetem, po odłączeniu bramki
 status offline w ≤ 2 cykle, budżet nigdy nie przekroczony (test 24 h na staging z logiem `api_calls`).

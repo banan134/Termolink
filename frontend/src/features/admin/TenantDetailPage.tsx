@@ -4,6 +4,7 @@ import { tenantsApi } from "@/api/tenants";
 import { PageTitle } from "@/app/AppLayout";
 import { Alert, Button, Card, Chip, Skeleton } from "@/components/ui";
 import { t } from "@/i18n/pl";
+import { ProviderAccountsCard, TenantDevicesCard } from "./ProviderAccountsCard";
 import { UsersCard } from "./UsersCard";
 import s from "./admin.module.css";
 
@@ -67,6 +68,8 @@ export default function TenantDetailPage() {
             </div>
           </div>
         </Card>
+        <ProviderAccountsCard tenantId={id} />
+        <TenantDevicesCard tenantId={id} />
         <UsersCard tenantId={id} scope="admin" />
       </div>
     </>
