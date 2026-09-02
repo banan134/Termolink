@@ -5,7 +5,7 @@ from .models import Invitation, User
 
 
 @admin.register(User)
-class UserAdmin(DjangoUserAdmin[User]):
+class UserAdmin(DjangoUserAdmin):
     ordering = ("email",)
     list_display = ("email", "role", "tenant", "totp_enabled", "is_active")
     list_filter = ("role", "is_active", "totp_enabled")
@@ -31,6 +31,6 @@ class UserAdmin(DjangoUserAdmin[User]):
 
 
 @admin.register(Invitation)
-class InvitationAdmin(admin.ModelAdmin[Invitation]):
+class InvitationAdmin(admin.ModelAdmin):
     list_display = ("email", "role", "tenant", "expires_at", "accepted_at")
     readonly_fields = ("token_hash",)
