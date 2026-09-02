@@ -20,10 +20,24 @@ def get_adapter(provider: str) -> ProviderAdapter:
 
 
 def _load_builtin() -> None:
-    from .viessmann.adapter import ViessmannAdapter
+    """Real adapter, or the fixture-backed mock when VIESSMANN_MOCK=1 (docs/15)."""
+    from django.conf import settings
 
-    if "viessmann" not in ADAPTERS:
+    if "viessmann" in ADAPTERS:
+        return
+    if getattr(settings, "VIESSMANN_MOCK", False):
+        from .viessmann.mock import MockViessmannAdapter
+
+        register(MockViessmannAdapter())
+    else:
+        from .viessmann.adapter import ViessmannAdapter
+
         register(ViessmannAdapter())
+
+
+def reset_for_tests() -> None:
+    ADAPTERS.clear()
+    _load_builtin()
 
 
 _load_builtin()

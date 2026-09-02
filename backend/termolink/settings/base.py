@@ -186,7 +186,7 @@ VIESSMANN_API_BASE: str = env(
 VIESSMANN_IAM_BASE: str = env(
     "VIESSMANN_IAM_BASE", default="https://iam.viessmann-climatesolutions.com/idp/v3"
 )
-VIESSMANN_MOCK: bool = env.bool("VIESSMANN_MOCK", default=False)
+VIESSMANN_MOCK: bool = False if _is_pytest else env.bool("VIESSMANN_MOCK", default=False)
 OAUTH_REDIRECT_BASE: str = env("OAUTH_REDIRECT_BASE", default="http://localhost:8080")
 PUBLIC_BASE_URL: str = env("PUBLIC_BASE_URL", default=OAUTH_REDIRECT_BASE)
 _raw_retention = env("RAW_RETENTION_DAYS", default="").strip()

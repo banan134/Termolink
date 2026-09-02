@@ -36,6 +36,12 @@ def _require_read(request: Request) -> None:
         raise forbidden()
 
 
+def _require_operator(request: Request) -> None:
+    """Role check AFTER the tenant-scope check, so foreign tenants answer 404 (docs/04)."""
+    if not IsOperator().has_permission(request, None):
+        raise forbidden()
+
+
 class ProviderAccountListView(APIView):
     @extend_schema(responses={200: None})
     def get(self, request: Request, tenant_id: str) -> Response:
@@ -46,11 +52,10 @@ class ProviderAccountListView(APIView):
 
 
 class ProviderAuthorizeView(APIView):
-    permission_classes = [IsOperator]
-
     @extend_schema(request=AuthorizeSerializer, responses={200: None})
     def post(self, request: Request, tenant_id: str, provider: str) -> Response:
         tenant = get_tenant_or_404(request, tenant_id)
+        _require_operator(request)
         data = AuthorizeSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         try:
@@ -67,11 +72,10 @@ class ProviderAuthorizeView(APIView):
 
 
 class ProviderAccountDetailView(APIView):
-    permission_classes = [IsOperator]
-
     @extend_schema(request=AccountPatchSerializer, responses={200: None})
     def patch(self, request: Request, tenant_id: str, account_id: str) -> Response:
         tenant = get_tenant_or_404(request, tenant_id)
+        _require_operator(request)
         account = services.get_account_or_404(tenant, account_id)
         data = AccountPatchSerializer(data=request.data, partial=True)
         data.is_valid(raise_exception=True)
@@ -83,17 +87,17 @@ class ProviderAccountDetailView(APIView):
     @extend_schema(responses={204: None})
     def delete(self, request: Request, tenant_id: str, account_id: str) -> Response:
         tenant = get_tenant_or_404(request, tenant_id)
+        _require_operator(request)
         account = services.get_account_or_404(tenant, account_id)
         services.disconnect_account(request._request, actor=current_user(request), account=account)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ProviderDiscoverView(APIView):
-    permission_classes = [IsOperator]
-
     @extend_schema(request=None, responses={202: None})
     def post(self, request: Request, tenant_id: str, account_id: str) -> Response:
         tenant = get_tenant_or_404(request, tenant_id)
+        _require_operator(request)
         account = services.get_account_or_404(tenant, account_id)
         job = services.enqueue_discover(
             request._request, actor=current_user(request), account=account
@@ -102,13 +106,12 @@ class ProviderDiscoverView(APIView):
 
 
 class ProviderDiscoveredView(APIView):
-    permission_classes = [IsOperator]
-
     @extend_schema(responses={200: None})
     def get(self, request: Request, tenant_id: str, account_id: str) -> Response:
         from apps.devices.models import Device, DiscoveredDevice
 
         tenant = get_tenant_or_404(request, tenant_id)
+        _require_operator(request)
         account = services.get_account_or_404(tenant, account_id)
         added = {
             (d["installationId"], d["gatewaySerial"], d["deviceId"])

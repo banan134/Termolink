@@ -37,11 +37,21 @@ class Worker:
         )
 
     def run_once(self) -> int:
-        """One tick: heartbeat, release stale locks, run up to `concurrency` due jobs."""
+        """One tick: heartbeat, stale locks, scheduler (docs/06), run up to `concurrency` jobs."""
         with transaction.atomic():
             set_context(SYSTEM)
             self.heartbeat()
             queue.release_stale()
+        try:
+            with transaction.atomic():
+                set_context(SYSTEM)
+                from .poller import schedule_polls
+
+                scheduled = schedule_polls()
+            if scheduled:
+                log.info("scheduler enqueued %s poll(s)", scheduled)
+        except Exception:  # noqa: BLE001 — never let the scheduler kill the worker loop
+            log.exception("scheduler tick failed")
         ran = 0
         while ran < self.concurrency:
             with transaction.atomic():
