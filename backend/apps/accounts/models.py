@@ -26,6 +26,9 @@ class Role(models.TextChoices):
 
 OPERATOR_ROLES: frozenset[str] = frozenset({Role.SUPERADMIN, Role.TECHNICIAN})
 TENANT_ROLES: frozenset[str] = frozenset({Role.TENANT_ADMIN, Role.TENANT_USER})
+# Sorted for deterministic migrations (set iteration order varies between processes).
+_OPERATOR_ROLE_LIST = sorted(OPERATOR_ROLES)
+_TENANT_ROLE_LIST = sorted(TENANT_ROLES)
 
 
 class UiTheme(models.TextChoices):
@@ -81,8 +84,8 @@ class User(AbstractBaseUser, PermissionsMixin):
             # role IN ('superadmin','technician') ⇔ tenant_id IS NULL (docs/03)
             models.CheckConstraint(
                 condition=(
-                    Q(role__in=list(OPERATOR_ROLES), tenant__isnull=True)
-                    | Q(role__in=list(TENANT_ROLES), tenant__isnull=False)
+                    Q(role__in=_OPERATOR_ROLE_LIST, tenant__isnull=True)
+                    | Q(role__in=_TENANT_ROLE_LIST, tenant__isnull=False)
                 ),
                 name="users_role_tenant_consistency",
             ),
@@ -144,8 +147,8 @@ class Invitation(models.Model):
         constraints = [
             models.CheckConstraint(
                 condition=(
-                    Q(role__in=list(OPERATOR_ROLES), tenant__isnull=True)
-                    | Q(role__in=list(TENANT_ROLES), tenant__isnull=False)
+                    Q(role__in=_OPERATOR_ROLE_LIST, tenant__isnull=True)
+                    | Q(role__in=_TENANT_ROLE_LIST, tenant__isnull=False)
                 ),
                 name="invitations_role_tenant_consistency",
             ),
@@ -173,3 +176,44 @@ class Invitation(models.Model):
     @property
     def is_valid(self) -> bool:
         return self.accepted_at is None and self.expires_at > timezone.now()
+
+
+class LoginAttempt(models.Model):
+    """Failed/successful login attempts for lockout (docs/08). No tenant_id: pre-auth data."""
+
+    email_lower = models.TextField()
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    success = models.BooleanField(default=False)
+    ts = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "login_attempts"
+        indexes = [
+            models.Index(fields=["email_lower", "ts"], name="login_attempts_email_ts"),
+            models.Index(fields=["ip", "ts"], name="login_attempts_ip_ts"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.email_lower} {'ok' if self.success else 'fail'} {self.ts:%Y-%m-%d %H:%M}"
+
+
+class UserSession(models.Model):
+    """One row per active Django session, so users can list and revoke their sessions."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    session_key = models.TextField(unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sessions")
+    tenant = models.ForeignKey(
+        "tenants.Tenant", null=True, blank=True, on_delete=models.CASCADE, related_name="+"
+    )
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_seen_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "user_sessions"
+        ordering = ["-last_seen_at"]
+
+    def __str__(self) -> str:
+        return f"{self.user_id} {self.ip} {self.created_at:%Y-%m-%d}"

@@ -15,7 +15,7 @@ Konwencje:
 
 | Metoda | Ścieżka | Opis |
 |---|---|---|
-| POST | `/auth/login` | `{email, password, totp?}` → 200 + sesja; 401; 428 `totp_required` |
+| POST | `/auth/login` | `{email, password, totp?}` → 200 `{user: …jak /auth/me}` + sesja; 401 `invalid_credentials`; 428 `totp_required`; 429 `login_locked` (`retry_after_s`); throttling 5/min/IP |
 | POST | `/auth/logout` | |
 | GET | `/auth/me` | `{id, email, role, tenant: {id,name} \| null, totp_enabled, allowed_tenants[], ui_theme}` |
 | PATCH | `/auth/me` | `{ui_theme: 'light'\|'dark'}` |
@@ -23,7 +23,7 @@ Konwencje:
 | POST | `/auth/password/reset-request` / `/auth/password/reset` | tokeny jednorazowe, 30 min |
 | POST | `/auth/totp/setup` → `{secret, otpauth_url}`; POST `/auth/totp/enable {code}` → backup codes; POST `/auth/totp/disable {password, code}` | |
 | POST | `/auth/reauth` | `{password, totp?}` → krótkotrwały znacznik w sesji (`reauth_until`, 5 min) używany przez sterowanie i zmiany wrażliwe |
-| GET | `/auth/sessions` / DELETE `/auth/sessions/{id}` | aktywne sesje |
+| GET | `/auth/sessions` / DELETE `/auth/sessions/{id}` | aktywne sesje: `[{id, ip, user_agent, created_at, last_seen_at, current}]`; usunięcie bieżącej = wylogowanie |
 | POST | `/auth/invitations/accept` | `{token, password}` |
 
 ## Operator: klienci (superadmin, technician w zakresie przypisań)

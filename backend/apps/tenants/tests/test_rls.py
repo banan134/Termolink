@@ -121,3 +121,19 @@ def test_write_into_other_tenant_is_rejected(data: Data, as_app_role: None) -> N
             [a.id],
         )
     assert tech is not None
+
+
+@pytest.mark.django_db
+def test_every_table_with_tenant_id_has_rls_policies() -> None:
+    from apps.tenants.rls import RLS_TABLES
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT table_name FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND column_name = 'tenant_id'"
+        )
+        tables = {row[0] for row in cursor.fetchall()}
+        cursor.execute("SELECT DISTINCT tablename FROM pg_policies WHERE schemaname = 'public'")
+        protected = {row[0] for row in cursor.fetchall()}
+    assert tables == protected, f"tables without RLS: {tables - protected}"
+    assert tables == set(RLS_TABLES), "RLS_TABLES registry out of sync with the schema"

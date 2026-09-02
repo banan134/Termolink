@@ -48,9 +48,12 @@ def rls_operations(table: str, *, tenant_nullable: bool = False) -> list[migrati
     return [migrations.RunSQL(sql="\n".join(forward), reverse_sql="\n".join(backward))]
 
 
+# Registry of protected tables (checked by tests against pg_policies). Each new table gets its
+# own migration calling rls_operations(); migrations must not iterate this dict.
 RLS_TABLES: dict[str, bool] = {
     # table: tenant_id nullable
     "users": True,
     "invitations": True,
     "tenant_memberships": False,
+    "user_sessions": True,
 }
