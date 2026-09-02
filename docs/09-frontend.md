@@ -5,7 +5,7 @@ Stos: React 18 + TypeScript + Vite, React Router, TanStack Query (cache + pollin
 (bez Tailwind — mniej zależności, pełna kontrola nad paletą). Język UI: polski (teksty w `src/i18n/pl.ts`
 od początku, żeby dodanie innego języka nie wymagało przeszukiwania kodu).
 
-Referencja wizualna: klikalny mockup `mockup-termolink.html` (7 ekranów, paleta Wodmiar). Mockup jest wzorcem układu
+Referencja wizualna: klikalny mockup `../mockup-termolink.html` (7 ekranów, paleta Wodmiar). Mockup jest wzorcem układu
 i zachowań, nie pikseli.
 
 ## Design tokens (`src/styles/tokens.css`)
