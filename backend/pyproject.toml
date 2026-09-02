@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Termolink — multi-tenant heating device monitoring and control portal"
 requires-python = ">=3.12"
 dependencies = [
-    "Django>=5.1,<5.2",
+    "Django>=5.1,<6.2",
     "djangorestframework>=3.15",
     "drf-spectacular>=0.27",
     "django-environ>=0.11",
