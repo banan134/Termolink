@@ -58,4 +58,6 @@ RLS_TABLES: dict[str, bool] = {
     "user_sessions": True,
     "audit_log": True,
     "jobs": True,
+    "provider_accounts": False,
+    "oauth_states": False,
 }
