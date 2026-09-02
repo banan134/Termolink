@@ -191,10 +191,15 @@ report_schedules (id uuid, tenant_id, name, report_type, device_ids uuid[], feat
 report_files (id uuid, tenant_id, schedule_id NULL, requested_by, report_type, params jsonb,
               file_path, format text, created_at, expires_at)
 
-jobs (id bigserial, kind text, payload jsonb, tenant_id uuid NULL, provider_account_id uuid NULL,
-      run_at timestamptz, priority int DEFAULT 100, attempts int, max_attempts int, locked_at NULL,
-      locked_by NULL, status text, last_error NULL, created_at)
-  -- indeks (status, run_at, priority); pobieranie: FOR UPDATE SKIP LOCKED
+jobs (id bigserial, public_id uuid UNIQUE, kind text, payload jsonb, tenant_id uuid NULL, provider_account_id uuid NULL,
+      created_by uuid NULL, run_at timestamptz, priority int DEFAULT 100, attempts int, max_attempts int DEFAULT 3,
+      locked_at NULL, locked_by NULL, status text CHECK (status IN ('queued','running','done','failed')),
+      last_error NULL, result jsonb NULL, created_at, finished_at NULL)
+  -- indeks (status, run_at, priority); pobieranie: FOR UPDATE SKIP LOCKED (`ingest/queue.py`); RLS (tenant NULL = globalne);
+  -- API zwraca `public_id`; retry z backoffem 1/5/15 min do max_attempts; lock > 10 min = porzucony; done/failed kasowane po 14 d
+
+worker_heartbeats (worker_id text PK, hostname, concurrency int, started_at, last_beat_at, jobs_done, jobs_failed)
+  -- upsert co tick; wiersz usuwany przy czystym zamknięciu; brak heartbeatu > 2 min → alert operatora (etap 5)
 
 feature_labels (feature_name_pattern text PK, label_pl text, description_pl text, group_key NULL, sort int)
   -- słownik globalny (operator); pattern z wildcard dla indeksów: heating.circuits.*.sensors.temperature.supply
