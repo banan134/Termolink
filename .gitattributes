@@ -1,0 +1,7 @@
+# Keep LF in the repo and in checkouts so scripts, Dockerfiles and Makefile
+# work identically on Windows hosts (bind-mounted into Linux containers).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
