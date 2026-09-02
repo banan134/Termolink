@@ -22,6 +22,8 @@ _GRANTS = (
 
 # Tables the runtime role may only INSERT into and SELECT from (docs/03: append-only).
 APPEND_ONLY_TABLES = ("audit_log",)
+# Base relations hidden behind *_rls security_barrier views (docs/03; hypertable + compression).
+VIEW_ISOLATED_RELATIONS = ("feature_values", "feature_values_1h", "feature_values_1d")
 
 
 def ensure_app_role(cursor: Any, raw_connection: Any) -> bool:
@@ -48,6 +50,20 @@ def ensure_app_role(cursor: Any, raw_connection: Any) -> bool:
             cursor.execute(
                 sql.SQL("REVOKE UPDATE, DELETE, TRUNCATE ON {table} FROM {role}")
                 .format(table=sql.Identifier(table), role=ident)
+                .as_string(raw_connection)
+            )
+    for relation in VIEW_ISOLATED_RELATIONS:
+        cursor.execute("SELECT to_regclass(%s)", [relation])
+        if cursor.fetchone()[0] is not None:
+            cursor.execute(
+                sql.SQL("REVOKE ALL ON {rel} FROM {role}")
+                .format(rel=sql.Identifier(relation), role=ident)
+                .as_string(raw_connection)
+            )
+            # the compressed chunks live in _timescaledb_internal; the view runs as the owner
+            cursor.execute(
+                sql.SQL("GRANT SELECT, INSERT ON {view} TO {role}")
+                .format(view=sql.Identifier(f"{relation}_rls"), role=ident)
                 .as_string(raw_connection)
             )
     return not exists

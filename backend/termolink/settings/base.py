@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "apps.audit",
     "apps.ingest",
     "apps.providers",
+    "apps.devices",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

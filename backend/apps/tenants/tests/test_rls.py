@@ -125,14 +125,15 @@ def test_write_into_other_tenant_is_rejected(data: Data, as_app_role: None) -> N
 
 @pytest.mark.django_db
 def test_every_table_with_tenant_id_has_rls_policies() -> None:
-    from apps.tenants.rls import RLS_TABLES
+    from apps.tenants.rls import RLS_TABLES, VIEW_ISOLATED_TABLES
 
     with connection.cursor() as cursor:
         cursor.execute(
-            "SELECT table_name FROM information_schema.columns "
-            "WHERE table_schema = 'public' AND column_name = 'tenant_id'"
+            "SELECT c.relname FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid "
+            "JOIN pg_namespace n ON n.oid = c.relnamespace "
+            "WHERE n.nspname = 'public' AND a.attname = 'tenant_id' AND c.relkind = 'r'"
         )
-        tables = {row[0] for row in cursor.fetchall()}
+        tables = {row[0] for row in cursor.fetchall()} - VIEW_ISOLATED_TABLES
         cursor.execute("SELECT DISTINCT tablename FROM pg_policies WHERE schemaname = 'public'")
         protected = {row[0] for row in cursor.fetchall()}
     assert tables == protected, f"tables without RLS: {tables - protected}"

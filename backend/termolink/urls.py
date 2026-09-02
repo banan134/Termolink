@@ -3,11 +3,15 @@ from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from apps.providers.api import oauth_callback
+
 urlpatterns = [
     path("api/v1/", include("apps.core.urls")),
     path("api/v1/auth/", include("apps.accounts.urls")),
     path("api/v1/", include("apps.ingest.urls")),
     path("api/v1/", include("apps.tenants.urls")),
+    path("api/v1/", include("apps.providers.urls")),
+    path("oauth/<str:provider>/callback", oauth_callback, name="oauth-callback"),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "api/schema/swagger/",
