@@ -57,8 +57,8 @@ jeśli `DJANGO_ENV != dev`.
 | `dev` | `-f … -f …dev.yml up --build` | start wszystkiego z logami |
 | `up` / `down` | `up -d` / `down` | w tle / zatrzymanie (dane w wolumenie zostają) |
 | `reset` | `down -v` | zatrzymanie + **usunięcie bazy** |
-| `migrate` | `exec backend python manage.py migrate` | |
-| `makemigrations` | `exec backend python manage.py makemigrations` | |
+| `migrate` | `exec -e DJANGO_DB_ROLE=admin backend python manage.py migrate` | jako właściciel bazy (RLS, `03-data-model.md`) |
+| `makemigrations` | `exec -e DJANGO_DB_ROLE=admin backend python manage.py makemigrations` | |
 | `seed` | `exec backend python manage.py seed_demo` | dane demo |
 | `test` | `exec backend pytest` + `exec frontend npm test` | |
 | `lint` | ruff, mypy, eslint, tsc | |
@@ -69,7 +69,7 @@ jeśli `DJANGO_ENV != dev`.
 
 ## Nakładka dev — co zmienia
 
-- `backend`: `migrate` przy starcie, potem `runserver 0.0.0.0:8000` z autoreload, `DEBUG=1`, kod zamontowany `../backend:/app`,
+- `backend`: `migrate` + `ensure_app_db_role` przy starcie (`DJANGO_DB_ROLE=admin`), potem `runserver 0.0.0.0:8000` jako rola `termolink_app` (bez `BYPASSRLS`), `DEBUG=1`, kod zamontowany `../backend:/app`,
   `DJANGO_ENV=dev`, target `dev` w Dockerfile (pytest, ruff, mypy, ipython w obrazie).
 - `worker`: ten sam obraz, `run_worker --concurrency 4 --tick 5`; można zatrzymać (`docker compose stop worker`),
   gdy pracujemy tylko nad UI i nie chcemy zużywać budżetu API Viessmann.
@@ -112,6 +112,7 @@ jeśli `DJANGO_ENV != dev`.
 | Objaw | Przyczyna / rozwiązanie |
 |---|---|
 | Wolny HMR/ruff na Windows | kod w systemie plików Windows montowany do Linuksa — sklonuj repo wewnątrz WSL (`\\wsl$`) |
+| `permission denied for table …` | polecenie uruchomione jako `termolink_app` przed migracją tworzącą rolę/granty — `make migrate`, potem ponów; pytest sam przełącza się na rolę admin |
 | `backend` startuje przed bazą | `depends_on` z `condition: service_healthy` + healthcheck `pg_isready` w compose |
 | `Invalid redirection URI` | brak `http://localhost:8080/...` w portalu Viessmann |
 | Worker zużył budżet | `docker compose stop worker`; `VIESSMANN_MOCK=1` |

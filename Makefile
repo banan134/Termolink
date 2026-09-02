@@ -24,11 +24,12 @@ down:
 reset:
 	$(COMPOSE) down -v
 
+# Schema changes run as the DB owner; the app itself uses the RLS-restricted role (docs/03).
 migrate:
-	$(COMPOSE) exec backend python manage.py migrate
+	$(COMPOSE) exec -e DJANGO_DB_ROLE=admin backend python manage.py migrate
 
 makemigrations:
-	$(COMPOSE) exec backend python manage.py makemigrations
+	$(COMPOSE) exec -e DJANGO_DB_ROLE=admin backend python manage.py makemigrations
 
 seed:
 	@echo "seed_demo is not implemented yet (stage 1, task 9)."
@@ -45,7 +46,7 @@ lint:
 	$(COMPOSE) exec frontend npm run typecheck
 
 shell:
-	$(COMPOSE) exec backend python manage.py shell
+	$(COMPOSE) exec -e DJANGO_DB_ROLE=admin backend python manage.py shell
 
 psql:
 	$(COMPOSE) exec db psql -U termolink
