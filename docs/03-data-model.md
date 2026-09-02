@@ -140,13 +140,18 @@ feature_values (                               -- historia (hypertable po ts_pol
   value_num double precision NULL, value_bool boolean NULL, value_text text NULL,
   tenant_id uuid NOT NULL)
   -- SELECT create_hypertable('feature_values','ts_polled', chunk_time_interval => interval '7 days');
+  -- IZOLACJA: TimescaleDB nie pozwala na RLS na hypertable z kompresją („columnstore cannot be used on
+  -- table with row security”), więc feature_values (i agregaty 1h/1d) są izolowane widokami
+  -- security_barrier `feature_values_rls`, `feature_values_1h_rls`, `feature_values_1d_rls` z tym samym
+  -- predykatem co polityki (tenant/operator/system) i WITH CHECK OPTION dla INSERT; rola aplikacji ma
+  -- REVOKE ALL na tabelach bazowych (ponawiane przez ensure_app_db_role). ORM czyta/pisze przez widok.
   -- kompresja: segmentby (device_id, feature_name, property_name), orderby ts_polled DESC, po 7 dniach
   -- indeks: (device_id, feature_name, property_name, ts_polled DESC)
   -- retencja surowych: parametr RAW_RETENTION_DAYS (NULL = bez limitu)
 
 feature_values_1h  -- continuous aggregate: time_bucket('1 hour'), min/avg/max/last(value_num), count
 feature_values_1d  -- continuous aggregate: time_bucket('1 day'), min/avg/max/last, count
-  -- odświeżanie: 1h co 15 min (okno 3 h), 1d co 1 h (okno 2 d)
+  -- odświeżanie: 1h co 15 min (okno 4 h − 10 min), 1d co 1 h (okno 3 d − 1 h); Timescale wymaga okna ≥ 2 kubełki
 
 device_status_history (device_id, tenant_id, status, since timestamptz, until NULL, detail)
 ```

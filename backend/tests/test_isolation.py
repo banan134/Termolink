@@ -20,6 +20,9 @@ from apps.ingest import queue
 from apps.tenants.models import Tenant, TenantMembership
 
 PASSWORD = "correct-horse-battery-staple"
+# 2xx, or a denial that is NOT about tenant scope (503 = provider not configured in tests,
+# 429 = budget reserve exhausted); 403/404 would mean the operator was refused by scope.
+OK_OR_EXPECTED_DENIAL = (200, 201, 202, 204, 429, 503)
 
 
 @dataclass(frozen=True)
@@ -49,6 +52,12 @@ ENDPOINTS: list[Endpoint] = [
         tenant_roles_allowed=(Role.TENANT_ADMIN,),
     ),
     Endpoint("job-detail", "GET"),
+    Endpoint("provider-accounts", "GET", tenant_roles_allowed=(Role.TENANT_ADMIN,)),
+    Endpoint("provider-authorize", "POST", body={}, tenant_roles_allowed=()),
+    Endpoint("provider-account", "PATCH", body={"label": "x"}, tenant_roles_allowed=()),
+    Endpoint("provider-account", "DELETE", tenant_roles_allowed=()),
+    Endpoint("provider-discover", "POST", body={}, tenant_roles_allowed=()),
+    Endpoint("provider-discovered", "GET", tenant_roles_allowed=()),
 ]
 
 
@@ -57,7 +66,7 @@ class World:
     a: Tenant
     b: Tenant
     users: dict[str, User]
-    jobs: dict[str, Any]
+    jobs: dict[str, Any]  # jobs and provider accounts per tenant key
 
 
 @pytest.fixture
@@ -82,7 +91,16 @@ def world() -> World:
     for u in (users["superadmin"], users["tech_member"], users["tech_outsider"]):
         u.totp_enabled = True  # operators are gated without 2FA; bypass verification in tests
         u.save(update_fields=["totp_enabled"])
-    jobs = {"a": queue.enqueue("noop", tenant=a), "b": queue.enqueue("noop", tenant=b)}
+    jobs: dict[str, Any] = {
+        "a": queue.enqueue("noop", tenant=a),
+        "b": queue.enqueue("noop", tenant=b),
+    }
+    from apps.providers.models import ProviderAccount
+
+    for key, tenant in (("a", a), ("b", b)):
+        jobs[f"account_{key}"] = ProviderAccount.objects.create(
+            tenant=tenant, provider="viessmann", refresh_token_enc=b"v1|x", label=key
+        )
     return World(a=a, b=b, users=users, jobs=jobs)
 
 
@@ -108,9 +126,19 @@ def login(user: User) -> Client:
 def url_for(endpoint: Endpoint, world: World, tenant: Tenant) -> str:
     from django.urls import reverse
 
+    key = "a" if tenant is world.a else "b"
     if endpoint.name == "job-detail":
-        job = world.jobs["a" if tenant is world.a else "b"]
-        return reverse(endpoint.name, kwargs={"job_id": str(job.public_id)})
+        return reverse(endpoint.name, kwargs={"job_id": str(world.jobs[key].public_id)})
+    if endpoint.name == "provider-authorize":
+        return reverse(endpoint.name, kwargs={"tenant_id": str(tenant.id), "provider": "viessmann"})
+    if endpoint.name in ("provider-account", "provider-discover", "provider-discovered"):
+        return reverse(
+            endpoint.name,
+            kwargs={
+                "tenant_id": str(tenant.id),
+                "account_id": str(world.jobs[f"account_{key}"].id),
+            },
+        )
     return reverse(endpoint.name, kwargs={"tenant_id": str(tenant.id)})
 
 
@@ -132,7 +160,7 @@ def test_tenant_a_cannot_reach_tenant_b(world: World, endpoint: Endpoint) -> Non
     own = call(client, endpoint, url_for(endpoint, world, world.a))
     if Role.TENANT_ADMIN in endpoint.tenant_roles_allowed:
         assert foreign == 404, f"foreign tenant: {foreign}"
-        assert own in (200, 201), f"own tenant: {own}"
+        assert own in (200, 201, 202), f"own tenant: {own}"
     else:
         # the whole endpoint group is off-limits for tenant roles (docs/04 matrix): 403 either way
         assert foreign == 403 and own == 403, f"foreign {foreign}, own {own}"
@@ -157,7 +185,7 @@ def test_technician_needs_membership(world: World, endpoint: Endpoint) -> None:
     outsider = login(world.users["tech_outsider"])
     assert call(outsider, endpoint, url_for(endpoint, world, world.a)) == 404
     member = login(world.users["tech_member"])
-    assert call(member, endpoint, url_for(endpoint, world, world.a)) in (200, 201)
+    assert call(member, endpoint, url_for(endpoint, world, world.a)) in OK_OR_EXPECTED_DENIAL
     assert call(member, endpoint, url_for(endpoint, world, world.b)) == 404
 
 
@@ -165,8 +193,8 @@ def test_technician_needs_membership(world: World, endpoint: Endpoint) -> None:
 @pytest.mark.parametrize("endpoint", ENDPOINTS, ids=lambda e: f"{e.method} {e.name}")
 def test_superadmin_reaches_everything(world: World, endpoint: Endpoint) -> None:
     client = login(world.users["superadmin"])
-    assert call(client, endpoint, url_for(endpoint, world, world.a)) in (200, 201)
-    assert call(client, endpoint, url_for(endpoint, world, world.b)) in (200, 201)
+    assert call(client, endpoint, url_for(endpoint, world, world.a)) in OK_OR_EXPECTED_DENIAL
+    assert call(client, endpoint, url_for(endpoint, world, world.b)) in OK_OR_EXPECTED_DENIAL
 
 
 def test_every_tenant_url_is_covered() -> None:

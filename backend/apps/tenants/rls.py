@@ -15,6 +15,17 @@ _TENANT_ID = "NULLIF(current_setting('app.tenant_id', true), '')::uuid"
 _ALLOWED = "string_to_array(NULLIF(current_setting('app.allowed_tenants', true), ''), ',')::uuid[]"
 _ROLE = "current_setting('app.role', true)"
 
+# The same predicate as the policies below, for security_barrier views over compressed
+# hypertables (TimescaleDB does not allow RLS together with compression — docs/03).
+RLS_PREDICATE = (
+    f"(tenant_id = {_TENANT_ID}"
+    f" OR ({_ROLE} = 'operator' AND tenant_id = ANY ({_ALLOWED}))"
+    f" OR {_ROLE} = 'system')"
+)
+
+# Tables with tenant_id that are isolated through *_rls views instead of policies.
+VIEW_ISOLATED_TABLES = frozenset({"feature_values", "feature_values_1h", "feature_values_1d"})
+
 
 def rls_operations(table: str, *, tenant_nullable: bool = False) -> list[migrations.RunSQL]:
     if not _TABLE.match(table):
@@ -60,4 +71,10 @@ RLS_TABLES: dict[str, bool] = {
     "jobs": True,
     "provider_accounts": False,
     "oauth_states": False,
+    "devices": False,
+    "feature_definitions": False,
+    "feature_latest": False,
+    "feature_json_history": False,
+    "device_status_history": False,
+    "discovered_devices": False,
 }
