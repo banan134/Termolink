@@ -1,0 +1,31 @@
+# secrets / local config
+deploy/.env
+.env
+.env.local
+
+# data
+pgdata*
+media/
+backups/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+backend/staticfiles/
+
+# node
+node_modules/
+frontend/dist/
+frontend/coverage/
+
+# tooling
+.claude/worktrees/
+.DS_Store
+Thumbs.db
+*.log

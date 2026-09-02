@@ -1,0 +1,72 @@
+/* Design tokens — docs/09-frontend.md. Light theme is the default regardless of OS setting;
+   dark theme is opt-in via data-theme="dark" on <html> (saved in the user profile). */
+:root {
+  /* marka */
+  --brand-primary: #1e3b87;
+  --brand-secondary: #3f568c;
+  --brand-red: #ea0b28;
+  --brand-ink: #ffffff; /* tekst na brand-primary; kontrast 10.6:1 */
+
+  /* powierzchnie (jasny motyw — domyślny) */
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f4f6fa;
+  --border: #d7dce8;
+  --border-strong: #b9c2d8;
+  --text: #1c1c1c;
+  --text-muted: #5a6275;
+  --text-faint: #8b93a7;
+
+  /* semantyka */
+  --accent: var(--brand-primary);
+  --accent-bg: #e6ebf6;
+  --control: #8a5a00;
+  --control-bg: #fbeed3; /* tryb sterowania / potwierdzenia — bursztyn */
+  --danger: var(--brand-red);
+  --danger-bg: #fde7ea; /* błędy, offline, alarmy, akcje nieodwracalne */
+  --ok: #1f7a3d;
+  --ok-bg: #e1f1e4;
+  --focus: var(--brand-primary);
+
+  /* typografia */
+  --font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+  --fs-lg: 20px;
+  --fs-xl: 25px;
+  --fs-2xl: 31px;
+
+  /* odstępy (4-pt) i promienie */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 12px;
+}
+
+:root[data-theme="dark"] {
+  --brand-primary: #7c97e6;
+  --brand-secondary: #a4b5ea;
+  --brand-red: #ff5a6e;
+  --bg: #0f1523;
+  --surface: #161d2e;
+  --surface-2: #1e2740;
+  --border: #2b3653;
+  --border-strong: #3d4a6d;
+  --text: #e9ecf4;
+  --text-muted: #a3adc6;
+  --text-faint: #6f7a99;
+  --accent-bg: #1c2a4d;
+  --accent-ink: #0b1120;
+  --control: #e3b25a;
+  --control-bg: #3a2d12;
+  --danger-bg: #3b1a20;
+  --ok: #7fd08f;
+  --ok-bg: #1c3322;
+}

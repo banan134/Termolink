@@ -20,7 +20,7 @@ deploy/
   docker-compose.dev.yml    # nakładka dev: montowanie kodu, hot reload, porty, bez TLS
   docker-compose.prod.yml   # nakładka prod: Caddy z TLS, read-only, replicas
   Caddyfile                 # prod
-  Caddyfile.dev             # dev: http://localhost, proxy /api → backend, / → vite
+  Caddyfile.dev             # dev: http://localhost:8080, proxy /api,/oauth,/admin-django,/static → backend, reszta → vite
   .env.example
 backend/Dockerfile          # multi-stage: target dev (z narzędziami) i prod
 frontend/Dockerfile         # dev: vite dev server; prod: build → statyczne pliki
@@ -31,8 +31,9 @@ Makefile
 
 ```bash
 git clone <repo> termolink && cd termolink
-cp deploy/.env.example deploy/.env      # uzupełnić VIESSMANN_CLIENT_ID; reszta ma wartości dev
 make dev                                 # = docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml up --build
+# `make dev` tworzy deploy/.env z .env.example, jeśli go nie ma; VIESSMANN_CLIENT_ID uzupełnić przed etapem 2.
+# Bez `make` (Windows bez WSL): cp deploy/.env.example deploy/.env i powyższe polecenie docker compose.
 ```
 
 Po starcie:
@@ -68,7 +69,7 @@ jeśli `DJANGO_ENV != dev`.
 
 ## Nakładka dev — co zmienia
 
-- `backend`: `runserver 0.0.0.0:8000` z autoreload, `DEBUG=1`, kod zamontowany `../backend:/app`,
+- `backend`: `migrate` przy starcie, potem `runserver 0.0.0.0:8000` z autoreload, `DEBUG=1`, kod zamontowany `../backend:/app`,
   `DJANGO_ENV=dev`, target `dev` w Dockerfile (pytest, ruff, mypy, ipython w obrazie).
 - `worker`: ten sam obraz, `run_worker --concurrency 4 --tick 5`; można zatrzymać (`docker compose stop worker`),
   gdy pracujemy tylko nad UI i nie chcemy zużywać budżetu API Viessmann.

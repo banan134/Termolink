@@ -1,0 +1,74 @@
+# Base Compose file, shared by every environment (docs/11-deployment.md).
+# Use with an overlay:
+#   dev : docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   prod: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# The `backup` service from docs/11 is added in stage 6.
+
+name: termolink
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - frontend_dist:/srv/frontend:ro
+    depends_on:
+      backend:
+        condition: service_started
+
+  backend:
+    build:
+      context: ../backend
+      target: prod
+    restart: unless-stopped
+    command: gunicorn termolink.wsgi --workers 4 --bind 0.0.0.0:8000 --timeout 30
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - media:/app/media
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  worker:
+    build:
+      context: ../backend
+      target: prod
+    restart: unless-stopped
+    command: python manage.py run_worker --concurrency 20
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - media:/app/media
+    deploy:
+      replicas: 1
+
+  db:
+    image: timescale/timescaledb:latest-pg16
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    # no `ports:` — reachable only inside the compose network
+
+volumes:
+  pgdata: {}
+  media: {}
+  caddy_data: {}
+  frontend_dist: {}

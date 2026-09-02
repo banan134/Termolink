@@ -1,0 +1,24 @@
+# Production Caddyfile (docs/11-deployment.md) — draft, finalised with the prod overlay in stage 6.
+# Replace the domain with the real one (docs/14 B1).
+app.termolink.example {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
+
+	@backend path /api/* /oauth/* /admin-django/* /static/*
+	handle @backend {
+		reverse_proxy backend:8000
+	}
+
+	handle {
+		root * /srv/frontend
+		try_files {path} /index.html
+		file_server
+	}
+}
