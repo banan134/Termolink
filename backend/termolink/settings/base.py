@@ -1,5 +1,7 @@
 """Base settings shared by all environments. Everything configurable comes from env (12-factor)."""
 
+import re
+import sys
 from pathlib import Path
 
 import environ
@@ -39,6 +41,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.tenants.middleware.TenantContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -62,13 +65,31 @@ TEMPLATES = [
     },
 ]
 
-# --- Database: PostgreSQL 16 + TimescaleDB; one transaction per request (docs/03, RLS) ---
+# --- Database: PostgreSQL 16 + TimescaleDB (docs/03) ---
+# Two DB roles: the owner from DATABASE_URL (migrations, tests: DJANGO_DB_ROLE=admin) and the
+# runtime role DB_APP_USER without BYPASSRLS (DJANGO_DB_ROLE=app, default) — RLS only bites
+# for a non-superuser role. pytest needs the owner to create the test database.
+_is_pytest = "pytest" in sys.argv[0]
+DB_ROLE: str = env("DJANGO_DB_ROLE", default="admin" if _is_pytest else "app")
+DB_APP_USER: str = env("DB_APP_USER", default="termolink_app")
+DB_APP_PASSWORD: str = env("DB_APP_PASSWORD", default="")
+if not re.fullmatch(r"[a-z_][a-z0-9_]*", DB_APP_USER):
+    raise RuntimeError("DB_APP_USER must be a plain lowercase identifier")
+if DB_ROLE not in ("app", "admin"):
+    raise RuntimeError(f"DJANGO_DB_ROLE={DB_ROLE!r}; expected 'app' or 'admin'")
+
 DATABASES = {"default": env.db("DATABASE_URL")}
-DATABASES["default"]["ATOMIC_REQUESTS"] = True
+if DB_ROLE == "app":
+    DATABASES["default"]["USER"] = DB_APP_USER
+    DATABASES["default"]["PASSWORD"] = DB_APP_PASSWORD
+# The per-request transaction is owned by TenantContextMiddleware (SET LOCAL context).
+DATABASES["default"]["ATOMIC_REQUESTS"] = False
 DATABASES["default"]["CONN_MAX_AGE"] = 60
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- Auth / sessions (docs/08) ---
+# Credential and session lookups run in the RLS `system` context (apps/accounts/backends.py).
+AUTHENTICATION_BACKENDS = ["apps.accounts.backends.RlsModelBackend"]
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",

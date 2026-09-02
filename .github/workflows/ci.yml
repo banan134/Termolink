@@ -34,7 +34,9 @@ jobs:
     env:
       DJANGO_ENV: dev
       DJANGO_SECRET_KEY: ci-only
+      DJANGO_DB_ROLE: admin
       DATABASE_URL: postgres://termolink:termolink@localhost:5432/termolink
+      DB_APP_PASSWORD: termolink_app
     defaults:
       run:
         working-directory: backend

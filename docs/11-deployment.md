@@ -78,7 +78,9 @@ app.termolink.example {
 ```
 DJANGO_SECRET_KEY=
 DJANGO_ALLOWED_HOSTS=app.termolink.example
-DATABASE_URL=postgres://termolink:***@db:5432/termolink
+DATABASE_URL=postgres://termolink:***@db:5432/termolink   # właściciel: migracje (DJANGO_DB_ROLE=admin)
+DB_APP_USER=termolink_app                                  # rola aplikacji bez BYPASSRLS (RLS)
+DB_APP_PASSWORD=***
 TOKEN_MASTER_KEY=            # 32 B base64; generować: python -c "import os,base64;print(base64.b64encode(os.urandom(32)).decode())"
 VIESSMANN_CLIENT_ID=
 VIESSMANN_API_BASE=https://api.viessmann-climatesolutions.com/iot/v1
@@ -93,7 +95,9 @@ SENSITIVE_COMMANDS=setMode,setSchedule,setCurve,deactivate
 ## Procedury
 
 - **Deploy**: CI buduje obrazy z tagiem = git SHA → na VPS `docker compose pull && docker compose up -d`
-  → `manage.py migrate` uruchamiane jako job przed startem `backend` (`depends_on` + skrypt). Rollback:
+  → `manage.py migrate` i `manage.py ensure_app_db_role` (oba z `DJANGO_DB_ROLE=admin`) uruchamiane
+  jako job przed startem `backend` (`depends_on` + skrypt); aplikacja i worker łączą się rolą
+  `termolink_app` bez `BYPASSRLS` (`03-data-model.md`). Rollback:
   poprzedni tag + (jeśli migracja nieodwracalna) przywrócenie backupu — migracje projektować jako
   „expand/contract”, żeby rollback kodu nie wymagał rollbacku DB.
 - **Backup**: co noc 02:00, `pg_dump -Fc`, szyfrowanie `age`, `rclone` do zewnętrznego magazynu;

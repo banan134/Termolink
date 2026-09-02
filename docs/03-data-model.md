@@ -19,12 +19,25 @@ CREATE POLICY operator_access ON devices
          AND tenant_id = ANY (string_to_array(current_setting('app.allowed_tenants', true), ',')::uuid[]));
 ```
 
-- Middleware `tenants.middleware.TenantContextMiddleware` na początku każdego żądania wykonuje
-  `SET LOCAL app.tenant_id = …; SET LOCAL app.role = …; SET LOCAL app.allowed_tenants = …`
-  (w transakcji per request: `ATOMIC_REQUESTS = True`).
-- Aplikacja łączy się jako rola DB **bez** `BYPASSRLS`. Migracje i worker-scheduler używają
-  osobnej roli `termolink_worker` z jawnie ustawianym kontekstem per job.
-- Superadmin: `app.allowed_tenants` = lista wszystkich tenantów (odświeżana per request).
+- Middleware `tenants.middleware.TenantContextMiddleware` otwiera transakcję per żądanie (zamiast
+  `ATOMIC_REQUESTS`) i wykonuje w niej `set_config('app.tenant_id' | 'app.role' | 'app.allowed_tenants'
+  | 'app.user_id', …, true)` (odpowiednik `SET LOCAL`). Najpierw ładuje użytkownika sesji w kontekście
+  `system`, potem ustawia właściwy kontekst. Helpery: `tenants.context.set_context()` i
+  `tenants.context.system_context()` (jedyny, jawny sposób obejścia izolacji — używany przez logowanie,
+  worker-scheduler i `seed_demo`; wywołania łatwo znaleźć grepem).
+- Role DB: **`termolink`** (właściciel, tylko migracje: `DJANGO_DB_ROLE=admin`) i **`termolink_app`**
+  (`LOGIN NOBYPASSRLS`, aplikacja i worker; domyślne `DJANGO_DB_ROLE=app`). Rola `termolink_app` jest
+  tworzona migracją (`tenants.0002`) z hasłem z `DB_APP_PASSWORD`, z `GRANT` na istniejące tabele
+  i `ALTER DEFAULT PRIVILEGES` na przyszłe. Bez tego rozdziału RLS nie działa — superuser omija RLS
+  niezależnie od `FORCE`. Worker ustawia kontekst jawnie per job (etap 1, zadanie 8).
+- Wartości `app.role`: `tenant` (użytkownik klienta), `operator` (superadmin/serwisant),
+  `system` (wewnętrzne), `anonymous` (brak sesji). Superadmin: `app.allowed_tenants` = wszystkie
+  tenanty (odświeżane per request); serwisant: tenanty z `tenant_memberships`.
+- Polityki (helper `tenants.rls.rls_operations(table, tenant_nullable)` dla migracji `RunSQL`):
+  `tenant_isolation` (jak wyżej, z `NULLIF(…, '')` dla pustego kontekstu), `operator_access`,
+  `system_access` (`app.role = 'system'`) oraz — dla tabel z `tenant_id NULL` (`users`, `invitations`) —
+  `operator_global_rows` (`app.role = 'operator' AND tenant_id IS NULL`), żeby operator widział konta
+  operatorów. Test w `apps/tenants/tests/test_rls.py` przełącza się na `termolink_app` (`SET LOCAL ROLE`).
 
 ## Tabele
 

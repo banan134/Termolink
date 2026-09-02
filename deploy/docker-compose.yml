@@ -33,6 +33,16 @@ services:
         condition: service_healthy
     volumes:
       - media:/app/media
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request as u; u.urlopen('http://localhost:8000/api/v1/health', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
     read_only: true
     tmpfs:
       - /tmp
@@ -49,6 +59,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      backend:
+        condition: service_healthy  # migrations (incl. the app DB role) have run
     volumes:
       - media:/app/media
     deploy:

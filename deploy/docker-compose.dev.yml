@@ -19,7 +19,8 @@ services:
       context: ../backend
       target: dev
     command: >
-      sh -c "python manage.py migrate --noinput &&
+      sh -c "DJANGO_DB_ROLE=admin python manage.py migrate --noinput &&
+             DJANGO_DB_ROLE=admin python manage.py ensure_app_db_role &&
              python manage.py runserver 0.0.0.0:8000"
     environment:
       DJANGO_ENV: dev
@@ -45,7 +46,7 @@ services:
       - media_dev:/app/media
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
 
   frontend:
     build:

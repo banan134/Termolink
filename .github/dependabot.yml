@@ -1,22 +1,35 @@
 # Dependency updates (docs/08-security.md). Grouped weekly PRs to keep noise low.
 version: 2
 updates:
+  # Major bumps of the pinned stack (CLAUDE.md) are decided deliberately, not by bots.
   - package-ecosystem: pip
     directory: /backend
     schedule: { interval: weekly }
     groups:
       python: { patterns: ["*"] }
+    ignore:
+      - dependency-name: "Django"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /frontend
     schedule: { interval: weekly }
     groups:
       javascript: { patterns: ["*"] }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
   - package-ecosystem: docker
     directory: /backend
     schedule: { interval: weekly }
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: docker
     directory: /frontend
     schedule: { interval: weekly }
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
