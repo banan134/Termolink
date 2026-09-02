@@ -2,7 +2,10 @@
 
 from django.db import migrations
 
-from apps.tenants.rls import RLS_TABLES, rls_operations
+from apps.tenants.rls import rls_operations
+
+# Frozen here on purpose: later tables get their own migration (never iterate the live registry).
+TABLES = {"users": True, "invitations": True, "tenant_memberships": False}
 
 
 class Migration(migrations.Migration):
@@ -11,7 +14,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        op
-        for table, nullable in RLS_TABLES.items()
-        for op in rls_operations(table, tenant_nullable=nullable)
+        op for table, nullable in TABLES.items() for op in rls_operations(table, tenant_nullable=nullable)
     ]

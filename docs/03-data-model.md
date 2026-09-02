@@ -63,6 +63,13 @@ tenant_memberships (                          -- serwisant ↔ klient
   user_id uuid, tenant_id uuid, can_control boolean DEFAULT false, PK(user_id, tenant_id))
 
 invitations (id uuid, tenant_id NULL, email, role, token_hash, expires_at, accepted_at NULL, created_by)
+
+login_attempts (id bigserial, email_lower text, ip inet NULL, success boolean, ts timestamptz)
+  -- blokada logowania (08-security.md); bez tenant_id (przed uwierzytelnieniem); indeksy (email_lower, ts), (ip, ts); retencja 7 dni
+
+user_sessions (id uuid PK, session_key text UNIQUE, user_id uuid, tenant_id uuid NULL,
+               ip inet NULL, user_agent text, created_at, last_seen_at)
+  -- widok „aktywne sesje” + wylogowanie zdalne; wiersz usuwany razem z sesją Django; RLS jak users
 ```
 
 ### Producenci i konta

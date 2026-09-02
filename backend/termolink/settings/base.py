@@ -42,6 +42,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "apps.tenants.middleware.TenantContextMiddleware",
+    "apps.accounts.middleware.SessionPolicyMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -107,7 +108,13 @@ SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_NAME = "tl_session"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_AGE = 7 * 24 * 3600  # hard max 7 days; idle timeout handled in stage 1 task 5
+SESSION_COOKIE_AGE = 12 * 3600  # idle timeout: sliding 12 h (docs/08)
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_ABSOLUTE_MAX_AGE = 7 * 24 * 3600  # hard cap enforced by SessionPolicyMiddleware
+LOGIN_LOCKOUT_THRESHOLD = 10
+LOGIN_LOCKOUT_WINDOW_S = 30 * 60
+LOGIN_LOCKOUT_MAX_DELAY_S = 30 * 60
+REQUIRE_OPERATOR_TOTP = False  # flipped on together with TOTP setup endpoints (stage 1, task 6)
 CSRF_COOKIE_NAME = "csrftoken"
 CSRF_COOKIE_HTTPONLY = False  # frontend reads it to send X-CSRFToken
 CSRF_COOKIE_SAMESITE = "Lax"
@@ -123,6 +130,12 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "EXCEPTION_HANDLER": "apps.core.exceptions.exception_handler",
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "5/min",
+        "password_reset": "3/hour",
+        "user": "600/min",
+    },
 }
 SPECTACULAR_SETTINGS = {
     "TITLE": "Termolink API",

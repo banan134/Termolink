@@ -7,9 +7,12 @@
 ## Uwierzytelnianie
 
 - Hasła: Argon2id (`django[argon2]`), min. 12 znaków, walidatory Django + lista popularnych haseł.
-- Blokada: po 10 nieudanych próbach na konto lub IP → opóźnienie narastające (1, 2, 4… min, max 30);
-  `django-axes` lub własna tabela `login_attempts`.
-- 2FA TOTP (`pyotp`): **obowiązkowe** dla `superadmin` i `technician` (bez 2FA nie ma logowania);
+- Blokada: po 10 nieudanych próbach na konto lub IP (okno 30 min) → opóźnienie narastające
+  (1, 2, 4… min, max 30) liczone od ostatniej nieudanej próby; odpowiedź 429 `login_locked` z `retry_after_s`;
+  udane logowanie czyści licznik konta. Własna tabela `login_attempts` (`03-data-model.md`). Adres IP
+  z `X-Forwarded-For` (pierwszy wpis) — ufamy tylko własnemu Caddy.
+- 2FA TOTP (`pyotp`): **obowiązkowe** dla `superadmin` i `technician` (bez 2FA nie ma logowania;
+  egzekwowane flagą `REQUIRE_OPERATOR_TOTP`, włączaną razem z endpointami setup TOTP — etap 1, zadanie 6);
   **wymagane** dla `tenant_admin` do sterowania; opcjonalne dla `tenant_user`. 10 kodów zapasowych (hash).
 - Brak samodzielnej rejestracji; zaproszenia z tokenem (hash w DB), ważność 72 h, jednorazowe.
 - Reset hasła: token 30 min, jednorazowy, unieważnia sesje.
@@ -19,7 +22,8 @@
 ## Sesje
 
 - `django.contrib.sessions`, backend DB, cookie `HttpOnly; Secure; SameSite=Lax`, nazwa niestandardowa.
-- Wygaśnięcie: 12 h bezczynności, max 7 dni. Rotacja ID po logowaniu. Lista sesji w profilu, wylogowanie
+- Wygaśnięcie: 12 h bezczynności (`SESSION_COOKIE_AGE` + `SESSION_SAVE_EVERY_REQUEST`), max 7 dni
+  (`login_at` w sesji, sprawdzane przez `accounts.middleware.SessionPolicyMiddleware`). Rotacja ID po logowaniu. Lista sesji w profilu, wylogowanie
   zdalne. Zmiana hasła → unieważnienie pozostałych sesji.
 - CSRF: `X-CSRFToken` (Django CSRF) — frontend pobiera z cookie `csrftoken`.
 
