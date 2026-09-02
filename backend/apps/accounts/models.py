@@ -217,3 +217,24 @@ class UserSession(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user_id} {self.ip} {self.created_at:%Y-%m-%d}"
+
+
+class PasswordResetToken(models.Model):
+    """Single-use, 30 min password reset token (docs/08); only the SHA-256 hash is stored."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_tokens")
+    token_hash = models.TextField(unique=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "password_reset_tokens"
+
+    def __str__(self) -> str:
+        return f"reset for {self.user_id} ({'used' if self.used_at else 'open'})"
+
+    @property
+    def is_valid(self) -> bool:
+        return self.used_at is None and self.expires_at > timezone.now()

@@ -37,6 +37,7 @@ jobs:
       DJANGO_DB_ROLE: admin
       DATABASE_URL: postgres://termolink:termolink@localhost:5432/termolink
       DB_APP_PASSWORD: termolink_app
+      TOKEN_MASTER_KEY: ZGV2LW9ubHktZGV2LW9ubHktZGV2LW9ubHktZGV2ISE=
     defaults:
       run:
         working-directory: backend

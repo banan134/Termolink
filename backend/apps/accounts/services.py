@@ -1,5 +1,6 @@
 """Auth services (docs/04 §Auth, docs/08). Views call these; no business logic in views."""
 
+import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
@@ -14,9 +15,20 @@ from django.utils import timezone
 from apps.core.exceptions import ApiError
 from apps.tenants.context import system_context
 
-from .models import LoginAttempt, User, UserSession
+from . import emails, totp
+from .models import (
+    Invitation,
+    LoginAttempt,
+    PasswordResetToken,
+    User,
+    UserSession,
+    hash_token,
+)
 
 LOGIN_AT_KEY = "login_at"
+REAUTH_UNTIL_KEY = "reauth_until"
+TOTP_PENDING_SECRET_KEY = "totp_pending_secret"  # noqa: S105 — session key name, not a secret
+TOTP_SETUP_ALLOWED_PATHS = ("/api/v1/auth/me", "/api/v1/auth/logout", "/api/v1/auth/totp/")
 
 
 def client_ip(request: HttpRequest) -> str | None:
@@ -66,7 +78,7 @@ def record_attempt(email: str, ip: str | None, *, success: bool) -> None:
 # --- login / logout --------------------------------------------------------------------------
 
 
-def login_user(request: HttpRequest, *, email: str, password: str, totp: str | None) -> User:
+def login_user(request: HttpRequest, *, email: str, password: str, totp_code: str | None) -> User:
     ip = client_ip(request)
     lock = lockout_for(email, ip)
     if lock:
@@ -84,18 +96,20 @@ def login_user(request: HttpRequest, *, email: str, password: str, totp: str | N
     assert isinstance(user, User)
 
     if user.totp_enabled:
-        # Code verification arrives with the TOTP endpoints (stage 1, task 6).
-        raise ApiError(
-            "totp_required", "Wymagany kod z aplikacji uwierzytelniającej.", status_code=428
-        )
-    if settings.REQUIRE_OPERATOR_TOTP and user.is_operator:
-        raise ApiError(
-            "totp_setup_required",
-            "Konto operatora wymaga włączonego 2FA.",
-            status_code=403,
-        )
+        if not totp_code:
+            raise ApiError(
+                "totp_required", "Wymagany kod z aplikacji uwierzytelniającej.", status_code=428
+            )
+        if not _check_second_factor(user, totp_code):
+            record_attempt(email, ip, success=False)
+            raise ApiError("invalid_totp", "Nieprawidłowy kod 2FA.", status_code=401)
 
     record_attempt(email, ip, success=True)
+    _start_session(request, user)
+    return user
+
+
+def _start_session(request: HttpRequest, user: User) -> None:
     login(request, user)  # rotates the session key
     request.session[LOGIN_AT_KEY] = timezone.now().isoformat()
     if request.session.session_key is None:
@@ -106,10 +120,23 @@ def login_user(request: HttpRequest, *, email: str, password: str, totp: str | N
         session_key=session_key,
         user=user,
         tenant_id=user.tenant_id,
-        ip=ip,
+        ip=client_ip(request),
         user_agent=request.META.get("HTTP_USER_AGENT", "")[:512],
     )
-    return user
+
+
+def _check_second_factor(user: User, code: str) -> bool:
+    """TOTP or backup code; persists consumed backup codes."""
+    with system_context():
+        ok = totp.verify_user_code(user, code)
+        if ok:
+            user.save(update_fields=["backup_codes_hash"])
+    return ok
+
+
+def totp_setup_pending(user: User) -> bool:
+    """Operators must enable 2FA before doing anything else (docs/08)."""
+    return bool(settings.REQUIRE_OPERATOR_TOTP and user.is_operator and not user.totp_enabled)
 
 
 def logout_user(request: HttpRequest) -> None:
@@ -222,3 +249,157 @@ def touch_session(request: HttpRequest) -> None:
         UserSession.objects.filter(
             session_key=key, last_seen_at__lt=timezone.now() - timedelta(seconds=60)
         ).update(last_seen_at=timezone.now())
+
+
+# --- reauth ----------------------------------------------------------------------------------
+
+
+def reauth(request: HttpRequest, user: User, *, password: str, totp_code: str | None) -> None:
+    if not user.check_password(password):
+        raise ApiError("invalid_credentials", "Nieprawidłowe hasło.", status_code=401)
+    if user.totp_enabled:
+        if not totp_code:
+            raise ApiError(
+                "totp_required", "Wymagany kod z aplikacji uwierzytelniającej.", status_code=428
+            )
+        if not _check_second_factor(user, totp_code):
+            raise ApiError("invalid_totp", "Nieprawidłowy kod 2FA.", status_code=401)
+    until = timezone.now() + timedelta(seconds=settings.REAUTH_TTL_S)
+    request.session[REAUTH_UNTIL_KEY] = until.isoformat()
+
+
+def has_valid_reauth(request: HttpRequest) -> bool:
+    raw = request.session.get(REAUTH_UNTIL_KEY)
+    if not raw:
+        return False
+    return datetime.fromisoformat(str(raw)) > timezone.now()
+
+
+def require_reauth(request: HttpRequest) -> None:
+    """Guard for sensitive operations (docs/08): 428 unless reauth happened in the last 5 min."""
+    if not has_valid_reauth(request):
+        raise ApiError(
+            "reauth_required", "Potwierdź tożsamość hasłem (i kodem 2FA).", status_code=428
+        )
+
+
+# --- TOTP ------------------------------------------------------------------------------------
+
+
+def totp_setup(request: HttpRequest, user: User) -> dict[str, str]:
+    if user.totp_enabled:
+        raise ApiError("totp_already_enabled", "2FA jest już włączone.", status_code=409)
+    secret = totp.new_secret()
+    request.session[TOTP_PENDING_SECRET_KEY] = secret
+    return {"secret": secret, "otpauth_url": totp.otpauth_url(user, secret)}
+
+
+def totp_enable(request: HttpRequest, user: User, *, code: str) -> list[str]:
+    if user.totp_enabled:
+        raise ApiError("totp_already_enabled", "2FA jest już włączone.", status_code=409)
+    secret = request.session.get(TOTP_PENDING_SECRET_KEY)
+    if not secret:
+        raise ApiError("totp_setup_missing", "Najpierw wywołaj /auth/totp/setup.", status_code=409)
+    if not totp.verify_code(secret, code):
+        raise ApiError(
+            "invalid_totp",
+            "Nieprawidłowy kod. Sprawdź czas na telefonie.",
+            status_code=400,
+            fields={"code": ["Nieprawidłowy kod."]},
+        )
+    codes = totp.new_backup_codes()
+    totp.store_secret(user, secret)
+    user.backup_codes_hash = [totp.hash_backup_code(c) for c in codes]
+    user.totp_enabled = True
+    user.save(update_fields=["totp_secret_enc", "backup_codes_hash", "totp_enabled"])
+    del request.session[TOTP_PENDING_SECRET_KEY]
+    return codes
+
+
+def totp_disable(request: HttpRequest, user: User, *, password: str, code: str) -> None:
+    if not user.totp_enabled:
+        raise ApiError("totp_not_enabled", "2FA nie jest włączone.", status_code=409)
+    if not user.check_password(password):
+        raise ApiError("invalid_credentials", "Nieprawidłowe hasło.", status_code=401)
+    if not _check_second_factor(user, code):
+        raise ApiError("invalid_totp", "Nieprawidłowy kod 2FA.", status_code=401)
+    if settings.REQUIRE_OPERATOR_TOTP and user.is_operator:
+        raise ApiError("totp_required_for_role", "Operator nie może wyłączyć 2FA.", status_code=403)
+    user.totp_secret_enc = None
+    user.backup_codes_hash = None
+    user.totp_enabled = False
+    user.save(update_fields=["totp_secret_enc", "backup_codes_hash", "totp_enabled"])
+    request.session.pop(REAUTH_UNTIL_KEY, None)
+
+
+# --- password reset --------------------------------------------------------------------------
+
+
+def request_password_reset(email: str) -> None:
+    """Always succeeds from the caller's point of view (no account enumeration)."""
+    with system_context():
+        user = User.objects.filter(email=email.lower(), is_active=True).first()
+        if user is None:
+            return
+        token = secrets.token_urlsafe(32)
+        PasswordResetToken.objects.create(
+            user=user,
+            token_hash=hash_token(token),
+            expires_at=timezone.now() + timedelta(seconds=settings.PASSWORD_RESET_TTL_S),
+        )
+    emails.send_password_reset(user.email, token)
+
+
+def reset_password(*, token: str, new_password: str) -> User:
+    with system_context():
+        row = (
+            PasswordResetToken.objects.select_related("user")
+            .filter(token_hash=hash_token(token))
+            .first()
+        )
+        if row is None or not row.is_valid:
+            raise ApiError("invalid_token", "Link jest nieprawidłowy lub wygasł.", status_code=400)
+        user = row.user
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+        PasswordResetToken.objects.filter(user=user, used_at__isnull=True).update(
+            used_at=timezone.now()
+        )
+        revoke_other_sessions(user, keep_session_key=None)
+    return user
+
+
+# --- invitations -----------------------------------------------------------------------------
+
+
+def issue_invitation(
+    *, email: str, role: str, tenant: Any | None, created_by: User | None
+) -> Invitation:
+    """Create + e-mail an invitation. Used by the operator/tenant-admin APIs (docs/04)."""
+    invitation, token = Invitation.issue(
+        email=email, role=role, tenant=tenant, created_by=created_by
+    )
+    emails.send_invitation(
+        invitation.email, token, tenant_name=tenant.name if tenant is not None else None
+    )
+    return invitation
+
+
+def accept_invitation(request: HttpRequest, *, token: str, password: str) -> User:
+    with system_context():
+        invitation = (
+            Invitation.objects.select_related("tenant").filter(token_hash=hash_token(token)).first()
+        )
+        if invitation is None or not invitation.is_valid:
+            raise ApiError(
+                "invalid_token", "Zaproszenie jest nieprawidłowe lub wygasło.", status_code=400
+            )
+        if User.objects.filter(email=invitation.email).exists():
+            raise ApiError("email_taken", "Konto z tym adresem już istnieje.", status_code=409)
+        user = User.objects.create_user(
+            invitation.email, password, role=invitation.role, tenant=invitation.tenant
+        )
+        invitation.accepted_at = timezone.now()
+        invitation.save(update_fields=["accepted_at"])
+    _start_session(request, user)
+    return user

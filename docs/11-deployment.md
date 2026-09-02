@@ -86,6 +86,7 @@ VIESSMANN_CLIENT_ID=
 VIESSMANN_API_BASE=https://api.viessmann-climatesolutions.com/iot/v1
 VIESSMANN_IAM_BASE=https://iam.viessmann-climatesolutions.com/idp/v3
 OAUTH_REDIRECT_BASE=https://app.termolink.example
+PUBLIC_BASE_URL=https://app.termolink.example   # linki w e-mailach (reset hasła, zaproszenia); domyślnie = OAUTH_REDIRECT_BASE
 RAW_RETENTION_DAYS=          # puste = bez limitu
 SMTP_URL=
 ALERT_EMAIL_OPERATOR=
