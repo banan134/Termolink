@@ -58,6 +58,11 @@ strict = true
 module = ["environ", "environ.*"]
 ignore_missing_imports = true
 
+# ModelAdmin is generic only in django-stubs; subscripting it fails at runtime.
+[[tool.mypy.overrides]]
+module = ["apps.*.admin"]
+disable_error_code = ["type-arg"]
+
 [tool.django-stubs]
 django_settings_module = "termolink.settings"
 

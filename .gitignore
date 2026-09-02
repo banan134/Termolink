@@ -29,3 +29,6 @@ frontend/coverage/
 .DS_Store
 Thumbs.db
 *.log
+
+# vite dep cache (created by dev server / vitest in the bind mount)
+frontend/.vite/

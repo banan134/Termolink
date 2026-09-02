@@ -39,7 +39,7 @@ tenants (
 
 users (
   id uuid PK, tenant_id uuid NULL REFERENCES tenants,   -- NULL = operator
-  email citext UNIQUE, password_hash text,
+  email text, password_hash text,             -- unikalność: UNIQUE (lower(email)); Django 5.1 nie ma już citext
   role text CHECK (role IN ('superadmin','technician','tenant_admin','tenant_user')),
   totp_secret_enc bytea NULL, totp_enabled boolean DEFAULT false,
   backup_codes_hash text[] NULL, is_active boolean, ui_theme text DEFAULT 'light',
