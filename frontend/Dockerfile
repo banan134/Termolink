@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # dev: Vite dev server with HMR (source bind-mounted). prod: static build served by Caddy.
 
-FROM node:22-alpine AS dev
+FROM node:26-alpine AS dev
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
@@ -9,7 +9,7 @@ COPY . .
 EXPOSE 5173
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
 
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci || npm install
