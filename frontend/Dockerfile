@@ -17,6 +17,6 @@ COPY . .
 RUN npm run build
 
 # prod: only the built files; the prod overlay copies /app/dist into the caddy volume.
-FROM alpine:3.20 AS prod
+FROM alpine:3.24 AS prod
 COPY --from=build /app/dist /srv/frontend
 CMD ["sh", "-c", "cp -r /srv/frontend/. /out/ && echo 'frontend dist exported'"]
