@@ -374,6 +374,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenants/{tenant_id}/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tenants_devices_retrieve"];
+        put?: never;
+        post: operations["tenants_devices_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/devices/{device_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tenants_devices_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete: operations["tenants_devices_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["tenants_devices_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/devices/{device_id}/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tenants_devices_features_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/devices/{device_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tenants_devices_history_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/devices/{device_id}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tenants_devices_refresh_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/devices/{device_id}/status-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tenants_devices_status_history_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tenants/{tenant_id}/invitations": {
         parameters: {
             query?: never;
@@ -384,6 +480,86 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["tenants_invitations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/provider-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tenants_provider_accounts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/provider-accounts/{account_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["tenants_provider_accounts_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["tenants_provider_accounts_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/provider-accounts/{account_id}/discover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tenants_provider_accounts_discover_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/provider-accounts/{account_id}/discovered": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tenants_provider_accounts_discovered_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/provider-accounts/{provider}/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tenants_provider_accounts_authorize_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -410,6 +586,28 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Authorize: {
+            label?: string;
+        };
+        DeviceCreate: {
+            /** Format: uuid */
+            provider_account_id: string;
+            external_ids: components["schemas"]["ExternalIds"];
+            display_name: string;
+            description?: string | null;
+            location_text?: string | null;
+            /** Format: decimal */
+            lat?: string | null;
+            /** Format: decimal */
+            lon?: string | null;
+            mode?: components["schemas"]["ModeEnum"];
+            poll_interval_s?: number | null;
+        };
+        ExternalIds: {
+            installationId: string;
+            gatewaySerial: string;
+            deviceId: string;
+        };
         Health: {
             status: string;
             db: boolean;
@@ -485,9 +683,33 @@ export interface components {
             /** @default false */
             can_control: boolean;
         };
+        /**
+         * @description * `read` - Odczyt
+         *     * `control` - Sterowanie
+         * @enum {string}
+         */
+        ModeEnum: "read" | "control";
         PasswordChange: {
             old_password: string;
             new_password: string;
+        };
+        PatchedAccountPatch: {
+            label?: string;
+            budget_limit?: number;
+            budget_reserve_pct?: number;
+            status?: components["schemas"]["StatusEnum"];
+        };
+        PatchedDevicePatch: {
+            display_name?: string;
+            description?: string | null;
+            location_text?: string | null;
+            /** Format: decimal */
+            lat?: string | null;
+            /** Format: decimal */
+            lon?: string | null;
+            mode?: components["schemas"]["ModeEnum"];
+            poll_interval_s?: number | null;
+            commands_per_hour_limit?: number;
         };
         PatchedMePatch: {
             ui_theme?: components["schemas"]["UiThemeEnum"];
@@ -530,6 +752,11 @@ export interface components {
             last_seen_at: string;
             current: boolean;
         };
+        /**
+         * @description * `disabled` - disabled
+         * @enum {string}
+         */
+        StatusEnum: "disabled";
         Tenant: {
             /** Format: uuid */
             readonly id: string;
@@ -1207,6 +1434,205 @@ export interface operations {
             };
         };
     };
+    tenants_devices_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_devices_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeviceCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["DeviceCreate"];
+                "multipart/form-data": components["schemas"]["DeviceCreate"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_devices_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_devices_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_devices_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedDevicePatch"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedDevicePatch"];
+                "multipart/form-data": components["schemas"]["PatchedDevicePatch"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_devices_features_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_devices_history_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_devices_refresh_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_devices_status_history_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     tenants_invitations_create: {
         parameters: {
             query?: never;
@@ -1231,6 +1657,143 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["InvitationRow"];
                 };
+            };
+        };
+    };
+    tenants_provider_accounts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_provider_accounts_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_provider_accounts_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedAccountPatch"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedAccountPatch"];
+                "multipart/form-data": components["schemas"]["PatchedAccountPatch"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_provider_accounts_discover_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_provider_accounts_discovered_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_provider_accounts_authorize_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Authorize"];
+                "application/x-www-form-urlencoded": components["schemas"]["Authorize"];
+                "multipart/form-data": components["schemas"]["Authorize"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -12,6 +12,8 @@ const AccountPage = lazy(() => import("@/features/account/AccountPage"));
 const TenantsPage = lazy(() => import("@/features/admin/TenantsPage"));
 const TenantDetailPage = lazy(() => import("@/features/admin/TenantDetailPage"));
 const TenantUsersPage = lazy(() => import("@/features/admin/TenantUsersPage"));
+const DevicesPage = lazy(() => import("@/features/devices/DevicesPage"));
+const DevicePage = lazy(() => import("@/features/devices/DevicePage"));
 
 function Fallback() {
   return (
@@ -34,6 +36,8 @@ export function AppRoutes() {
           <Route path="/admin/tenants" element={<TenantsPage />} />
           <Route path="/admin/tenants/:id" element={<TenantDetailPage />} />
           <Route path="/t/:tid/users" element={<TenantUsersPage />} />
+          <Route path="/t/:tid" element={<DevicesPage />} />
+          <Route path="/t/:tid/devices/:id" element={<DevicePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

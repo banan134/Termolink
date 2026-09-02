@@ -38,8 +38,10 @@ auth z 2FA (TOTP + kody zapasowe), reset hasła, zaproszenia, audit log append-o
 z workerem, `seed_demo`, frontend (logowanie z 2FA, `/account`, klienci i użytkownicy dla operatora,
 użytkownicy dla administratora klienta), parametryczne testy izolacji, CI.
 
-Następny krok: **etap 0** (ręczna weryfikacja API Viessmann i zrzuty do `backend/tests/fixtures/viessmann/`),
-a po nim etap 2 (adapter Viessmann i odczyt).
+**Etap 2 (adapter Viessmann i odczyt) zaimplementowany bez danych z etapu 0**: interfejs adaptera, OAuth PKCE,
+konta producenta z budżetem API, scheduler/poller/ingest na hypertable Timescale, API i UI urządzeń. Do domknięcia
+etapu 2 potrzebne są zrzuty z prawdziwego API (`docs/16-etap-0-instrukcja.md`) — dopiero na nich uruchomią się
+testy parsera i weryfikacja z urządzeniem.
 
 `make seed` tworzy operatora `admin@termolink.local` (z TOTP — sekret wypisany na stdout), serwisanta
 i 2 klientów demo; hasło wszystkich kont = `DEV_ADMIN_PASSWORD`. Typy TS z OpenAPI:
