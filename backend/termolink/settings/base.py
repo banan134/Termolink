@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.tenants",
     "apps.accounts",
+    "apps.audit",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
