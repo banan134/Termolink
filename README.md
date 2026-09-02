@@ -33,8 +33,14 @@ docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml up 
 
 ## Stan prac
 
-Etap 1 (fundament) z [`docs/13-roadmap.md`](docs/13-roadmap.md) — zadanie 1: szkielet repozytorium.
-Backend etapu 1 (konta, RLS, auth z 2FA, audit, kolejka `jobs`, `seed_demo`) i frontend (logowanie
-z 2FA, reset hasła, zaproszenia, `/account`: motyw, hasło, 2FA z QR, sesje) działają; zostały testy
-izolacji i API operatora (zadanie 12). Typy TS z OpenAPI: `docker compose … exec frontend npm run gen:types`. `make seed` tworzy operatora `admin@termolink.local` (z TOTP —
-sekret wypisany na stdout), serwisanta i 2 klientów demo; hasło wszystkich kont = `DEV_ADMIN_PASSWORD`.
+**Etap 1 (fundament) zakończony** — `docs/13-roadmap.md`: konta i klienci z RLS na osobnej roli DB,
+auth z 2FA (TOTP + kody zapasowe), reset hasła, zaproszenia, audit log append-only, kolejka `jobs`
+z workerem, `seed_demo`, frontend (logowanie z 2FA, `/account`, klienci i użytkownicy dla operatora,
+użytkownicy dla administratora klienta), parametryczne testy izolacji, CI.
+
+Następny krok: **etap 0** (ręczna weryfikacja API Viessmann i zrzuty do `backend/tests/fixtures/viessmann/`),
+a po nim etap 2 (adapter Viessmann i odczyt).
+
+`make seed` tworzy operatora `admin@termolink.local` (z TOTP — sekret wypisany na stdout), serwisanta
+i 2 klientów demo; hasło wszystkich kont = `DEV_ADMIN_PASSWORD`. Typy TS z OpenAPI:
+`docker compose … exec frontend npm run gen:types`.

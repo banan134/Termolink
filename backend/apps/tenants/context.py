@@ -86,6 +86,13 @@ def system_context() -> Iterator[None]:
             _set_raw(previous)
 
 
+def context_of(request: Any) -> TenantContext:
+    """The context attached to the request by TenantContextMiddleware."""
+    raw = getattr(request, "_request", request)
+    ctx = getattr(raw, "tenant_context", None)
+    return ctx if ctx is not None else ANONYMOUS
+
+
 def context_for_user(user: Any) -> TenantContext:
     """Build the context for an authenticated (or anonymous) portal user.
 

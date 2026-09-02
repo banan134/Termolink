@@ -4,6 +4,118 @@
  */
 
 export interface paths {
+    "/api/v1/admin/technicians": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_technicians_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/technicians/{user_id}/memberships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_technicians_memberships_list"];
+        put?: never;
+        post: operations["admin_technicians_memberships_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/technicians/{user_id}/memberships/{tenant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["admin_technicians_memberships_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_tenants_list"];
+        put?: never;
+        post: operations["admin_tenants_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tenants/{tenant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_tenants_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["admin_tenants_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/admin/tenants/{tenant_id}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin_tenants_invitations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tenants/{tenant_id}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_tenants_users_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf": {
         parameters: {
             query?: never;
@@ -262,6 +374,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenants/{tenant_id}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tenants_invitations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tenants_users_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -274,6 +418,28 @@ export interface components {
             token: string;
             password: string;
         };
+        InvitationRow: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["Role5d4Enum"];
+            /** Format: date-time */
+            expires_at: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        Invite: {
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["InviteRoleEnum"];
+        };
+        /**
+         * @description * `tenant_admin` - tenant_admin
+         *     * `tenant_user` - tenant_user
+         * @enum {string}
+         */
+        InviteRoleEnum: "tenant_admin" | "tenant_user";
         Job: {
             /** Format: uuid */
             id: string;
@@ -305,12 +471,33 @@ export interface components {
             allowed_tenants: string[];
             ui_theme: components["schemas"]["UiThemeEnum"];
         };
+        Membership: {
+            /** Format: uuid */
+            readonly tenant_id: string;
+            readonly tenant_name: string;
+            can_control?: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        MembershipWrite: {
+            /** Format: uuid */
+            tenant_id: string;
+            /** @default false */
+            can_control: boolean;
+        };
         PasswordChange: {
             old_password: string;
             new_password: string;
         };
         PatchedMePatch: {
             ui_theme?: components["schemas"]["UiThemeEnum"];
+        };
+        PatchedTenantPatch: {
+            name?: string;
+            type?: components["schemas"]["TypeEnum"];
+            control_allowed?: boolean;
+            report_header_text?: string;
+            timezone?: string;
         };
         Reauth: {
             password: string;
@@ -324,6 +511,14 @@ export interface components {
             /** Format: email */
             email: string;
         };
+        /**
+         * @description * `superadmin` - Superadmin
+         *     * `technician` - Serwisant
+         *     * `tenant_admin` - Administrator klienta
+         *     * `tenant_user` - Użytkownik klienta
+         * @enum {string}
+         */
+        Role5d4Enum: "superadmin" | "technician" | "tenant_admin" | "tenant_user";
         Session: {
             /** Format: uuid */
             id: string;
@@ -334,6 +529,31 @@ export interface components {
             /** Format: date-time */
             last_seen_at: string;
             current: boolean;
+        };
+        Tenant: {
+            /** Format: uuid */
+            readonly id: string;
+            name: string;
+            type?: components["schemas"]["TypeEnum"];
+            control_allowed?: boolean;
+            report_header_text?: string | null;
+            timezone?: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly archived_at: string | null;
+            readonly users_count: number;
+            /** @default 0 */
+            readonly devices_count: number;
+            /** @default 0 */
+            readonly online_count: number;
+        };
+        TenantWrite: {
+            name: string;
+            type?: components["schemas"]["TypeEnum"];
+            control_allowed?: boolean;
+            report_header_text?: string;
+            timezone?: string;
         };
         TotpBackupCodes: {
             backup_codes: string[];
@@ -350,11 +570,33 @@ export interface components {
             otpauth_url: string;
         };
         /**
+         * @description * `company` - Firma
+         *     * `person` - Osoba
+         * @enum {string}
+         */
+        TypeEnum: "company" | "person";
+        /**
          * @description * `light` - Jasny
          *     * `dark` - Ciemny
          * @enum {string}
          */
         UiThemeEnum: "light" | "dark";
+        UserRow: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["Role5d4Enum"];
+            totp_enabled?: boolean;
+            is_active?: boolean;
+            /**
+             * Ostatnie logowanie
+             * Format: date-time
+             */
+            last_login?: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -364,6 +606,234 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    admin_technicians_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRow"][];
+                };
+            };
+        };
+    };
+    admin_technicians_memberships_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Membership"][];
+                };
+            };
+        };
+    };
+    admin_technicians_memberships_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembershipWrite"];
+                "application/x-www-form-urlencoded": components["schemas"]["MembershipWrite"];
+                "multipart/form-data": components["schemas"]["MembershipWrite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Membership"];
+                };
+            };
+        };
+    };
+    admin_technicians_memberships_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_tenants_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tenant"][];
+                };
+            };
+        };
+    };
+    admin_tenants_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantWrite"];
+                "application/x-www-form-urlencoded": components["schemas"]["TenantWrite"];
+                "multipart/form-data": components["schemas"]["TenantWrite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tenant"];
+                };
+            };
+        };
+    };
+    admin_tenants_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tenant"];
+                };
+            };
+        };
+    };
+    admin_tenants_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTenantPatch"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedTenantPatch"];
+                "multipart/form-data": components["schemas"]["PatchedTenantPatch"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tenant"];
+                };
+            };
+        };
+    };
+    admin_tenants_invitations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Invite"];
+                "application/x-www-form-urlencoded": components["schemas"]["Invite"];
+                "multipart/form-data": components["schemas"]["Invite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationRow"];
+                };
+            };
+        };
+    };
+    admin_tenants_users_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRow"][];
+                };
+            };
+        };
+    };
     auth_csrf_retrieve: {
         parameters: {
             query?: never;
@@ -733,6 +1203,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Job"];
+                };
+            };
+        };
+    };
+    tenants_invitations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Invite"];
+                "application/x-www-form-urlencoded": components["schemas"]["Invite"];
+                "multipart/form-data": components["schemas"]["Invite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationRow"];
+                };
+            };
+        };
+    };
+    tenants_users_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRow"][];
                 };
             };
         };
