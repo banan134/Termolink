@@ -21,14 +21,15 @@ w `01-viessmann-api.md` odhaczona.
 
 ## Etap 1 — Fundament
 
-- [ ] Repo na GitHub, `deploy/docker-compose.yml` + nakładki dev/prod, Makefile, Django 5 + DRF + drf-spectacular, Postgres + Timescale (healthcheck), Mailpit w dev, ruff/mypy, CI. **Kryterium: `make dev` na czystym komputerze z samym Dockerem stawia działającą aplikację na http://localhost:8080.**
-- [ ] Modele: tenants, users, memberships, invitations; role; Argon2; sesje DB; CSRF.
-- [ ] `TenantContextMiddleware` + RLS (migracje `RunSQL`) na wszystkich tabelach z `tenant_id`.
-- [ ] Auth API: login (z blokadą), logout, me, reset, zaproszenia, TOTP (setup/enable/disable), reauth, sesje.
-- [ ] `audit_log` append-only + helper `audit(action, target, details)`.
-- [ ] Kolejka `jobs` + `run_worker` (pusty worker z heartbeat).
-- [ ] Frontend: Vite + React + TS, tokeny CSS, layout, logowanie, `/account`, generowanie typów z OpenAPI.
-- [ ] Testy izolacji (parametryczne) i auth.
+- [x] Repo na GitHub, `deploy/docker-compose.yml` + nakładki dev/prod, Makefile, Django 5 + DRF + drf-spectacular, Postgres + Timescale (healthcheck), Mailpit w dev, ruff/mypy, CI. **Kryterium: `make dev` na czystym komputerze z samym Dockerem stawia działającą aplikację na http://localhost:8080.**
+- [x] Modele: tenants, users, memberships, invitations; role; Argon2; sesje DB; CSRF.
+- [x] `TenantContextMiddleware` + RLS (migracje `RunSQL`) na wszystkich tabelach z `tenant_id`.
+- [x] Auth API: login (z blokadą), logout, me, reset, zaproszenia, TOTP (setup/enable/disable), reauth, sesje.
+- [x] `audit_log` append-only + helper `audit(action, target, details)`.
+- [x] Kolejka `jobs` + `run_worker` (pusty worker z heartbeat).
+- [x] Frontend: Vite + React + TS, tokeny CSS, layout, logowanie, `/account`, generowanie typów z OpenAPI.
+- [x] Testy izolacji (parametryczne) i auth; minimalne API operatora (`/admin/tenants*`, zaproszenia,
+      przypisania serwisantów) i klienta (`/tenants/{tid}/users`) z ekranami w UI.
 
 **Gotowe:** test izolacji zielony dla wszystkich istniejących endpointów; logowanie z 2FA działa w UI.
 

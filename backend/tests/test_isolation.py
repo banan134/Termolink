@@ -1,0 +1,186 @@
+"""Parametric isolation tests (docs/12 §Izolacja).
+
+For every endpoint that takes a tenant id or a tenant-owned resource id:
+1. user of tenant A → resource of tenant B → 404
+2. technician without membership → 404; with membership → 2xx
+3. superadmin → 2xx
+Add a row to ENDPOINTS for each new tenant-scoped endpoint; the registry test fails if a
+URL pattern with `tenant_id` is missing here.
+"""
+
+from dataclasses import dataclass
+from typing import Any
+
+import pytest
+from django.test import Client
+from django.urls import get_resolver
+
+from apps.accounts.models import Role, User
+from apps.ingest import queue
+from apps.tenants.models import Tenant, TenantMembership
+
+PASSWORD = "correct-horse-battery-staple"
+
+
+@dataclass(frozen=True)
+class Endpoint:
+    name: str  # URL pattern name
+    method: str
+    body: dict[str, Any] | None = None
+    tenant_roles_allowed: tuple[str, ...] = (Role.TENANT_ADMIN, Role.TENANT_USER)
+
+
+# Every tenant-scoped URL pattern must be listed (see test_every_tenant_url_is_covered).
+ENDPOINTS: list[Endpoint] = [
+    Endpoint("admin-tenant", "GET", tenant_roles_allowed=()),
+    Endpoint("admin-tenant", "PATCH", body={"name": "x"}, tenant_roles_allowed=()),
+    Endpoint("admin-tenant-users", "GET", tenant_roles_allowed=()),
+    Endpoint(
+        "admin-tenant-invitations",
+        "POST",
+        body={"email": "new@example.com", "role": "tenant_user"},
+        tenant_roles_allowed=(),
+    ),
+    Endpoint("tenant-users", "GET", tenant_roles_allowed=(Role.TENANT_ADMIN,)),
+    Endpoint(
+        "tenant-invitations",
+        "POST",
+        body={"email": "new2@example.com", "role": "tenant_user"},
+        tenant_roles_allowed=(Role.TENANT_ADMIN,),
+    ),
+    Endpoint("job-detail", "GET"),
+]
+
+
+@dataclass
+class World:
+    a: Tenant
+    b: Tenant
+    users: dict[str, User]
+    jobs: dict[str, Any]
+
+
+@pytest.fixture
+def world() -> World:
+    a = Tenant.objects.create(name="A")
+    b = Tenant.objects.create(name="B")
+    users = {
+        "superadmin": User.objects.create_superuser("sa@example.com", PASSWORD),
+        "tech_member": User.objects.create_user("tm@example.com", PASSWORD, role=Role.TECHNICIAN),
+        "tech_outsider": User.objects.create_user("to@example.com", PASSWORD, role=Role.TECHNICIAN),
+        "admin_a": User.objects.create_user(
+            "aa@example.com", PASSWORD, role=Role.TENANT_ADMIN, tenant=a
+        ),
+        "user_a": User.objects.create_user(
+            "ua@example.com", PASSWORD, role=Role.TENANT_USER, tenant=a
+        ),
+        "admin_b": User.objects.create_user(
+            "ab@example.com", PASSWORD, role=Role.TENANT_ADMIN, tenant=b
+        ),
+    }
+    TenantMembership.objects.create(user=users["tech_member"], tenant=a, can_control=True)
+    for u in (users["superadmin"], users["tech_member"], users["tech_outsider"]):
+        u.totp_enabled = True  # operators are gated without 2FA; bypass verification in tests
+        u.save(update_fields=["totp_enabled"])
+    jobs = {"a": queue.enqueue("noop", tenant=a), "b": queue.enqueue("noop", tenant=b)}
+    return World(a=a, b=b, users=users, jobs=jobs)
+
+
+def login(user: User) -> Client:
+    client = Client()
+    from apps.accounts import services
+
+    # go through the real login service but skip the TOTP challenge for operators
+    user.totp_enabled = False
+    user.save(update_fields=["totp_enabled"])
+    response = client.post(
+        "/api/v1/auth/login",
+        {"email": user.email, "password": PASSWORD},
+        content_type="application/json",
+    )
+    assert response.status_code == 200, response.content
+    user.totp_enabled = user.is_operator  # restore the gate flag for operators
+    user.save(update_fields=["totp_enabled"])
+    del services
+    return client
+
+
+def url_for(endpoint: Endpoint, world: World, tenant: Tenant) -> str:
+    from django.urls import reverse
+
+    if endpoint.name == "job-detail":
+        job = world.jobs["a" if tenant is world.a else "b"]
+        return reverse(endpoint.name, kwargs={"job_id": str(job.public_id)})
+    return reverse(endpoint.name, kwargs={"tenant_id": str(tenant.id)})
+
+
+def call(client: Client, endpoint: Endpoint, url: str) -> int:
+    response = client.generic(
+        endpoint.method,
+        url,
+        data=None if endpoint.body is None else __import__("json").dumps(endpoint.body),
+        content_type="application/json",
+    )
+    return response.status_code
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("endpoint", ENDPOINTS, ids=lambda e: f"{e.method} {e.name}")
+def test_tenant_a_cannot_reach_tenant_b(world: World, endpoint: Endpoint) -> None:
+    client = login(world.users["admin_a"])
+    foreign = call(client, endpoint, url_for(endpoint, world, world.b))
+    own = call(client, endpoint, url_for(endpoint, world, world.a))
+    if Role.TENANT_ADMIN in endpoint.tenant_roles_allowed:
+        assert foreign == 404, f"foreign tenant: {foreign}"
+        assert own in (200, 201), f"own tenant: {own}"
+    else:
+        # the whole endpoint group is off-limits for tenant roles (docs/04 matrix): 403 either way
+        assert foreign == 403 and own == 403, f"foreign {foreign}, own {own}"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("endpoint", ENDPOINTS, ids=lambda e: f"{e.method} {e.name}")
+def test_tenant_user_role_matrix(world: World, endpoint: Endpoint) -> None:
+    client = login(world.users["user_a"])
+    foreign = call(client, endpoint, url_for(endpoint, world, world.b))
+    own = call(client, endpoint, url_for(endpoint, world, world.a))
+    if Role.TENANT_USER in endpoint.tenant_roles_allowed:
+        assert foreign == 404 and own in (200, 201)
+    else:
+        assert foreign in (403, 404) and own in (403, 404)
+        assert foreign == own or foreign == 404  # never reveal B by answering differently
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("endpoint", ENDPOINTS, ids=lambda e: f"{e.method} {e.name}")
+def test_technician_needs_membership(world: World, endpoint: Endpoint) -> None:
+    outsider = login(world.users["tech_outsider"])
+    assert call(outsider, endpoint, url_for(endpoint, world, world.a)) == 404
+    member = login(world.users["tech_member"])
+    assert call(member, endpoint, url_for(endpoint, world, world.a)) in (200, 201)
+    assert call(member, endpoint, url_for(endpoint, world, world.b)) == 404
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("endpoint", ENDPOINTS, ids=lambda e: f"{e.method} {e.name}")
+def test_superadmin_reaches_everything(world: World, endpoint: Endpoint) -> None:
+    client = login(world.users["superadmin"])
+    assert call(client, endpoint, url_for(endpoint, world, world.a)) in (200, 201)
+    assert call(client, endpoint, url_for(endpoint, world, world.b)) in (200, 201)
+
+
+def test_every_tenant_url_is_covered() -> None:
+    covered = {e.name for e in ENDPOINTS}
+    missing = []
+    for pattern in get_resolver().url_patterns:
+        for name, route in _walk(pattern):
+            if "<str:tenant_id>" in route and name not in covered and "membership" not in name:
+                missing.append(name)
+    assert not missing, f"tenant-scoped endpoints without isolation tests: {missing}"
+
+
+def _walk(pattern: Any, prefix: str = "") -> list[tuple[str, str]]:
+    route = prefix + str(pattern.pattern)
+    if hasattr(pattern, "url_patterns"):
+        return [item for child in pattern.url_patterns for item in _walk(child, route)]
+    return [(pattern.name or "", route)]

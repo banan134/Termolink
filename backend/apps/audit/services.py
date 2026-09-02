@@ -37,6 +37,13 @@ def audit(
         target_type = target_type or target._meta.db_table
         target_id = target_id or getattr(target, "pk", None)
     ip = _client_ip(request) if request is not None else None
+    payload = dict(details or {})
+    target_uuid: UUID | None = None
+    if target_id is not None:
+        try:
+            target_uuid = UUID(str(target_id))
+        except ValueError:
+            payload.setdefault("target_pk", str(target_id))  # non-UUID primary keys
 
     with system_context():
         return AuditLog.objects.create(
@@ -44,8 +51,8 @@ def audit(
             user=user,
             action=action,
             target_type=target_type or "",
-            target_id=UUID(str(target_id)) if target_id else None,
-            details=details or {},
+            target_id=target_uuid,
+            details=payload,
             ip=ip,
         )
 

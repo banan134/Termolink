@@ -34,7 +34,10 @@ Konwencje:
 | GET/POST | `/admin/tenants` | lista z `devices_count, online_count, budget:{used,limit,reset_at}` |
 | GET/PATCH | `/admin/tenants/{id}` | `control_allowed`, `report_header_text`, `timezone` |
 | POST/DELETE | `/admin/tenants/{id}/logo` | multipart, PNG/SVG ≤ 1 MB |
-| GET/POST | `/admin/tenants/{id}/users` , POST `/admin/tenants/{id}/invitations` | |
+| GET | `/admin/tenants/{id}/users` | `{results:[{id,email,role,totp_enabled,is_active,last_login}], count, invitations:[…oczekujące]}` |
+| POST | `/admin/tenants/{id}/invitations` | `{email, role: tenant_admin\|tenant_user}` → 201; 409 `email_taken` |
+| GET | `/admin/technicians` | lista serwisantów (superadmin) |
+| GET/POST | `/tenants/{tid}/users`, POST `/tenants/{tid}/invitations` | to samo dla `tenant_admin` własnego klienta (docs/14 B7) i operatora |
 | GET/POST/DELETE | `/admin/technicians/{user_id}/memberships` | `{tenant_id, can_control}` |
 | GET/PUT | `/admin/feature-labels` | słownik etykiet (bulk) |
 | GET | `/admin/audit` | filtry: tenant, user, action, zakres dat |

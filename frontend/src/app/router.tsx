@@ -9,6 +9,9 @@ const LoginPage = lazy(() => import("@/features/auth/LoginPage"));
 const ResetPage = lazy(() => import("@/features/auth/ResetPage"));
 const InvitePage = lazy(() => import("@/features/auth/InvitePage"));
 const AccountPage = lazy(() => import("@/features/account/AccountPage"));
+const TenantsPage = lazy(() => import("@/features/admin/TenantsPage"));
+const TenantDetailPage = lazy(() => import("@/features/admin/TenantDetailPage"));
+const TenantUsersPage = lazy(() => import("@/features/admin/TenantUsersPage"));
 
 function Fallback() {
   return (
@@ -28,6 +31,9 @@ export function AppRoutes() {
         <Route element={<RequireAuth />}>
           <Route index element={<HomePage />} />
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/admin/tenants" element={<TenantsPage />} />
+          <Route path="/admin/tenants/:id" element={<TenantDetailPage />} />
+          <Route path="/t/:tid/users" element={<TenantUsersPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
