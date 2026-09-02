@@ -5,6 +5,9 @@ powinien realizować je jako osobne, małe PR-y z testami.
 
 ## Etap 0 — Weryfikacja API (ręcznie, przed kodem) — WARUNEK KONTYNUACJI
 
+Instrukcja i narzędzie: `16-etap-0-instrukcja.md` (`backend/scripts/viessmann_capture.py` robi PKCE,
+zrzuty, anonimizację i raport; ręcznie zostaje portal deweloperski i decyzje o testach limitu/offline).
+
 - [ ] Client ID w portalu Viessmann z redirect URI dev i prod.
 - [ ] Przebieg PKCE w Postmanie/httpie; zapis `expires_in`, sprawdzenie, czy refresh token rotuje.
 - [ ] Zrzuty `GET /equipment/installations?includeGateways=true` oraz `…/features` dla **każdego z 6 urządzeń** → `backend/tests/fixtures/viessmann/<model>_<deviceId>.json` (zanonimizować numery seryjne).
