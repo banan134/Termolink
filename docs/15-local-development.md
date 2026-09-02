@@ -46,9 +46,11 @@ Po starcie:
 | localhost:5432 | PostgreSQL (`termolink` / hasło z `.env`) — port wystawiony **tylko w dev** |
 | http://localhost:8025 | Mailpit — podgląd wysłanych e-maili (dev) |
 
-Pierwsze dane: `make seed` → operator `admin@termolink.local` / hasło z `.env` (`DEV_ADMIN_PASSWORD`),
-2 klientów demo, urządzenia z fixtures, 30 dni syntetycznej historii. Skrypt odmawia działania,
-jeśli `DJANGO_ENV != dev`.
+Pierwsze dane: `make seed` → operator `admin@termolink.local` i serwisant `serwis@termolink.local`
+(oba z włączonym TOTP — sekret i `otpauth://` wypisane na stdout przy pierwszym uruchomieniu; dodaj
+do aplikacji uwierzytelniającej), 2 klientów demo z kontami `admin@<klient>.demo` / `user@<klient>.demo`;
+hasło wszystkich kont = `DEV_ADMIN_PASSWORD` z `.env`. Urządzenia z fixtures i 30 dni syntetycznej
+historii dojdą w etapie 2. Skrypt jest idempotentny i odmawia działania, jeśli `DJANGO_ENV != dev`.
 
 ## Polecenia (Makefile)
 
