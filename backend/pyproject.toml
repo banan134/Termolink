@@ -1,0 +1,72 @@
+[project]
+name = "termolink"
+version = "0.1.0"
+description = "Termolink — multi-tenant heating device monitoring and control portal"
+requires-python = ">=3.12"
+dependencies = [
+    "Django>=5.1,<5.2",
+    "djangorestframework>=3.15",
+    "drf-spectacular>=0.27",
+    "django-environ>=0.11",
+    "psycopg[binary]>=3.2",
+    "gunicorn>=22",
+    "argon2-cffi>=23",
+    "whitenoise>=6.7",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-django>=4.8",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "django-stubs>=5",
+    "djangorestframework-stubs>=3.15",
+    "respx>=0.21",
+    "ipython>=8",
+    "coverage[toml]>=7",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "DJ", "S", "N"]
+ignore = ["S101"]  # assert is fine in tests
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S105", "S106"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+check_untyped_defs = true
+exclude = ["migrations/"]
+
+# docs/02: strict typing for adapters and control (apps added in stages 2 and 4)
+[[tool.mypy.overrides]]
+module = ["apps.adapters.*", "apps.control.*"]
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["environ", "environ.*"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "termolink.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "termolink.settings"
+python_files = ["test_*.py"]
+testpaths = ["apps", "tests"]
+addopts = "-ra"
+
+[tool.coverage.run]
+source = ["apps", "termolink"]
+omit = ["*/migrations/*", "*/tests/*"]
