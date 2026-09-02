@@ -14,7 +14,9 @@ Funkcje (`apps/providers/budget.py`), wszystkie transakcyjne w DB:
 used(account, window) -> int
 available_for_poll(account) -> int      # poll_budget - used_by_polls
 available_for_reserve(account) -> int   # reserve - used_by_reserve_kinds
-try_acquire(account, kind) -> bool      # SELECT ... FOR UPDATE na provider_accounts; INSERT api_calls; sprawdza oba okna
+try_acquire(account_id, kind, device_id=None) -> ApiCall | None   # SELECT ... FOR UPDATE na provider_accounts; INSERT api_calls; sprawdza oba okna
+finish_call(call, http_status, duration_ms, error_type)              # uzupełnia wpis po wywołaniu
+status(account) -> BudgetStatus                                      # used/limit/reset_at + podział poll/reserve/short
 ```
 `try_acquire` jest **jedynym** miejscem, w którym powstaje wpis `api_calls` przed wywołaniem; po
 wywołaniu wpis jest uzupełniany (`http_status`, `duration_ms`, `error_type`).
