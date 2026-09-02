@@ -22,7 +22,7 @@ from apps.tenants.models import Tenant, TenantMembership
 PASSWORD = "correct-horse-battery-staple"
 # 2xx, or a denial that is NOT about tenant scope (503 = provider not configured in tests,
 # 429 = budget reserve exhausted); 403/404 would mean the operator was refused by scope.
-OK_OR_EXPECTED_DENIAL = (200, 201, 202, 204, 429, 503)
+OK_OR_EXPECTED_DENIAL = (200, 201, 202, 204, 400, 429, 503)  # 400 = validation on dummy body
 
 
 @dataclass(frozen=True)
@@ -58,6 +58,26 @@ ENDPOINTS: list[Endpoint] = [
     Endpoint("provider-account", "DELETE", tenant_roles_allowed=()),
     Endpoint("provider-discover", "POST", body={}, tenant_roles_allowed=()),
     Endpoint("provider-discovered", "GET", tenant_roles_allowed=()),
+    Endpoint("devices", "GET"),
+    Endpoint(
+        "devices",
+        "POST",
+        body={
+            "provider_account_id": "00000000-0000-0000-0000-000000000000",
+            "external_ids": {"installationId": "1", "gatewaySerial": "G", "deviceId": "0"},
+            "display_name": "x",
+        },
+        tenant_roles_allowed=(),
+    ),
+    Endpoint("device", "GET"),
+    Endpoint(
+        "device", "PATCH", body={"display_name": "y"}, tenant_roles_allowed=(Role.TENANT_ADMIN,)
+    ),
+    Endpoint("device", "DELETE", tenant_roles_allowed=()),
+    Endpoint("device-refresh", "POST", body={}, tenant_roles_allowed=(Role.TENANT_ADMIN,)),
+    Endpoint("device-features", "GET"),
+    Endpoint("device-history", "GET"),
+    Endpoint("device-status-history", "GET"),
 ]
 
 
@@ -95,11 +115,19 @@ def world() -> World:
         "a": queue.enqueue("noop", tenant=a),
         "b": queue.enqueue("noop", tenant=b),
     }
+    from apps.devices.models import Device
     from apps.providers.models import ProviderAccount
 
     for key, tenant in (("a", a), ("b", b)):
         jobs[f"account_{key}"] = ProviderAccount.objects.create(
             tenant=tenant, provider="viessmann", refresh_token_enc=b"v1|x", label=key
+        )
+        jobs[f"device_{key}"] = Device.objects.create(
+            tenant=tenant,
+            provider_account=jobs[f"account_{key}"],
+            provider="viessmann",
+            external_ids={"installationId": key, "gatewaySerial": "G", "deviceId": "0"},
+            display_name=key,
         )
     return World(a=a, b=b, users=users, jobs=jobs)
 
@@ -131,6 +159,12 @@ def url_for(endpoint: Endpoint, world: World, tenant: Tenant) -> str:
         return reverse(endpoint.name, kwargs={"job_id": str(world.jobs[key].public_id)})
     if endpoint.name == "provider-authorize":
         return reverse(endpoint.name, kwargs={"tenant_id": str(tenant.id), "provider": "viessmann"})
+    if endpoint.name.startswith("device-") or endpoint.name == "device":
+        url = reverse(
+            endpoint.name,
+            kwargs={"tenant_id": str(tenant.id), "device_id": str(world.jobs[f"device_{key}"].id)},
+        )
+        return url + "?feature=x" if endpoint.name == "device-history" else url
     if endpoint.name in ("provider-account", "provider-discover", "provider-discovered"):
         return reverse(
             endpoint.name,
@@ -160,10 +194,13 @@ def test_tenant_a_cannot_reach_tenant_b(world: World, endpoint: Endpoint) -> Non
     own = call(client, endpoint, url_for(endpoint, world, world.a))
     if Role.TENANT_ADMIN in endpoint.tenant_roles_allowed:
         assert foreign == 404, f"foreign tenant: {foreign}"
-        assert own in (200, 201, 202), f"own tenant: {own}"
-    else:
-        # the whole endpoint group is off-limits for tenant roles (docs/04 matrix): 403 either way
+        assert own in (200, 201, 202, 400), f"own tenant: {own}"
+    elif url_for(endpoint, world, world.a).startswith("/api/v1/admin/"):
+        # the whole /admin group is off-limits for tenant roles (docs/04 matrix): 403 either way
         assert foreign == 403 and own == 403, f"foreign {foreign}, own {own}"
+    else:
+        # tenant-scoped route, operator-only action: own → 403, foreign → 404 (never reveal B)
+        assert foreign == 404 and own == 403, f"foreign {foreign}, own {own}"
 
 
 @pytest.mark.django_db
@@ -173,7 +210,7 @@ def test_tenant_user_role_matrix(world: World, endpoint: Endpoint) -> None:
     foreign = call(client, endpoint, url_for(endpoint, world, world.b))
     own = call(client, endpoint, url_for(endpoint, world, world.a))
     if Role.TENANT_USER in endpoint.tenant_roles_allowed:
-        assert foreign == 404 and own in (200, 201)
+        assert foreign == 404 and own in (200, 201, 202, 400)
     else:
         assert foreign in (403, 404) and own in (403, 404)
         assert foreign == own or foreign == 404  # never reveal B by answering differently
