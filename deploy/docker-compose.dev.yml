@@ -1,0 +1,80 @@
+# Dev overlay (docs/15-local-development.md): code bind-mounted with hot reload,
+# ports exposed on localhost, no TLS, Mailpit for outgoing e-mail.
+
+services:
+  caddy:
+    ports: !override
+      - "${DEV_HTTP_PORT:-8080}:80"
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      backend:
+        condition: service_started
+      frontend:
+        condition: service_started
+
+  backend:
+    build:
+      context: ../backend
+      target: dev
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    environment:
+      DJANGO_ENV: dev
+    volumes:
+      - ../backend:/app
+      - media_dev:/app/media
+    read_only: false
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  worker:
+    build:
+      context: ../backend
+      target: dev
+    command: python manage.py run_worker --concurrency 4 --tick 5
+    environment:
+      DJANGO_ENV: dev
+    volumes:
+      - ../backend:/app
+      - media_dev:/app/media
+    depends_on:
+      backend:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ../frontend
+      target: dev
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+    environment:
+      VITE_USE_POLLING: ${VITE_USE_POLLING:-0}
+      DEV_HTTP_PORT: ${DEV_HTTP_PORT:-8080}
+    volumes:
+      - ../frontend:/app
+      - frontend_node_modules:/app/node_modules
+
+  db:
+    ports:
+      - "${DEV_DB_PORT:-5432}:5432"
+    volumes: !override
+      - pgdata_dev:/var/lib/postgresql/data
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+volumes:
+  pgdata_dev: {}
+  media_dev: {}
+  frontend_node_modules: {}
