@@ -2,7 +2,7 @@
 # Multi-stage: base (runtime deps) → dev (tooling, hot reload) / prod (gunicorn, non-root).
 # Dependencies are read from pyproject.toml so there is a single source of truth.
 
-FROM python:3.12-slim AS base
+FROM python:3.14-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
