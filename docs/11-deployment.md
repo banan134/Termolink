@@ -83,7 +83,7 @@ DB_APP_USER=termolink_app                                  # rola aplikacji bez 
 DB_APP_PASSWORD=***
 TOKEN_MASTER_KEY=            # 32 B base64; generować: python -c "import os,base64;print(base64.b64encode(os.urandom(32)).decode())"
 VIESSMANN_CLIENT_ID=
-VIESSMANN_API_BASE=https://api.viessmann-climatesolutions.com/iot/v1
+VIESSMANN_API_BASE=https://api.viessmann-climatesolutions.com/iot/v2
 VIESSMANN_IAM_BASE=https://iam.viessmann-climatesolutions.com/idp/v3
 OAUTH_REDIRECT_BASE=https://app.termolink.example
 PUBLIC_BASE_URL=https://app.termolink.example   # linki w e-mailach (reset hasła, zaproszenia); domyślnie = OAUTH_REDIRECT_BASE

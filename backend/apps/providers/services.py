@@ -40,7 +40,8 @@ def start_authorization(
     request: HttpRequest, *, actor: Any, tenant: Tenant, provider: str, label: str = ""
 ) -> str:
     adapter = get_adapter(provider)
-    if not getattr(settings, f"{provider.upper()}_CLIENT_ID", ""):
+    mock = bool(getattr(settings, f"{provider.upper()}_MOCK", False))
+    if not mock and not getattr(settings, f"{provider.upper()}_CLIENT_ID", ""):
         raise ApiError(
             "provider_not_configured",
             f"Brak {provider.upper()}_CLIENT_ID w konfiguracji.",

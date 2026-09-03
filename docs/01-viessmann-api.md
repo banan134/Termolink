@@ -4,7 +4,11 @@
 > jest aplikacją JS i nie została odczytana automatycznie. Poniższe informacje pochodzą z:
 > FAQ i cennika portalu deweloperskiego Viessmann, dokumentacji integracji `vicare` w Home Assistant,
 > README oraz danych testowych biblioteki PyViCare (github.com/openviess/PyViCare).
-> Oznaczenia: **[FAKT]** — potwierdzone w źródle; **[ZAŁOŻENIE]** — do weryfikacji w etapie 0.
+> Od 3 września 2026 dochodzą **własne zrzuty etapu 0** (`backend/tests/fixtures/viessmann/`,
+> `capture_report.json`): instalacja z bramką TCU200 (`E3_TCU19_x05`), kotłem `E3_Vitodens_200_0421`
+> (181 cech) i `E3_RoomControl_One_19_04` (363 cechy).
+> Oznaczenia: **[FAKT]** — potwierdzone w źródle; **[FAKT 2026-09-03]** — potwierdzone własnym zrzutem;
+> **[ZAŁOŻENIE]** — do weryfikacji.
 > **Nie implementuj niczego oznaczonego [ZAŁOŻENIE] jako pewnik — dodaj test na rzeczywistym zrzucie.**
 
 ## 1. Rejestracja klienta API
@@ -26,9 +30,11 @@
 | Scope | `IoT User` | [FAKT] |
 | Client secret | brak (PKCE) | [FAKT] |
 | PKCE | `code_challenge_method=S256` | [FAKT] |
-| Czas życia access tokena | nieznany | [ZAŁOŻENIE: krótki, godziny] |
-| Czas życia refresh tokena | **nieznany** — kluczowe dla UX, sprawdzić | [ZAŁOŻENIE] |
-| Rotacja refresh tokena przy odświeżeniu | nieznana | [ZAŁOŻENIE: zapisywać nowy, jeśli zwrócony] |
+| Scope | `IoT User offline_access` (bez `offline_access` brak refresh tokena) | [FAKT 2026-09-03] |
+| Czas życia access tokena | `expires_in = 3600` s | [FAKT 2026-09-03] |
+| Czas życia refresh tokena | nieznany (obserwować; wg HA ok. 180 dni) | [ZAŁOŻENIE] |
+| Rotacja refresh tokena przy odświeżeniu | **nie rotuje**; odświeżenie daje nowy access token, `expires_in 3600` | [FAKT 2026-09-03] |
+| Odpowiedź tokena | `access_token`, `expires_in`, `refresh_token`, `token_type=Bearer` (brak `scope`, brak `sub`) | [FAKT 2026-09-03] |
 
 Przebieg:
 
@@ -46,29 +52,45 @@ Nieudane odświeżenie → `provider_accounts.status = 'reauth_required'` + aler
 
 ## 3. Endpointy IoT
 
-Base URL: `https://api.viessmann-climatesolutions.com/iot/v1` **[FAKT — z README PyViCare; potwierdzić w docs]**
+Base URL: `https://api.viessmann-climatesolutions.com/iot/v2` **[FAKT 2026-09-03]** — `/iot/v1/equipment/installations`
+odpowiada `410 GONE` (`errorType: GONE`, `sunsetDate 2025-12-15`, `extendedPayload.replacement:
+"GET /iot/v2/equipment/installations"`); skrypt etapu 0 podąża za zamiennikiem i zapisuje go w raporcie.
 
 | Cel | Endpoint | Status |
 |---|---|---|
-| Lista instalacji z bramami i urządzeniami | `GET /equipment/installations?includeGateways=true` | [FAKT] |
-| Wszystkie cechy urządzenia (1 wywołanie) | `GET /features/installations/{installationId}/gateways/{gatewaySerial}/devices/{deviceId}/features` | [FAKT] |
-| Pojedyncza cecha | `GET …/features/{featureName}` | [ZAŁOŻENIE] |
+| Lista instalacji z bramami i urządzeniami | `GET /equipment/installations?includeGateways=true` → `{cursor, data[]}` | [FAKT 2026-09-03] |
+| Wszystkie cechy urządzenia (1 wywołanie) | `GET /features/installations/{installationId}/gateways/{gatewaySerial}/devices/{deviceId}/features` → `{data[]}` | [FAKT 2026-09-03] |
+| Pojedyncza cecha | `GET …/features/{featureName}` — każda cecha ma własne pole `uri` w tym formacie | [FAKT 2026-09-03] |
+| Nieistniejąca cecha | `404 {"errorType":"FEATURE_NOT_FOUND","message":"Feature not found","extendedPayload":{}}` | [FAKT 2026-09-03] |
+| Zły/wygasły token | `401 {"errorType":"UNAUTHORIZED","message":"Request contain invalid token","error":"NO TOKEN AVAILABLE"}` | [FAKT 2026-09-03] |
 | Wykonanie komendy | `POST …/features/{featureName}/commands/{commandName}` z JSON params | [FAKT — `uri` komendy jest zwracane w cesze; używać **zwróconego `uri`**, nie budować ręcznie] |
-| Cechy bramki | `GET /features/installations/{id}/gateways/{serial}/features` | [ZAŁOŻENIE] |
+| Cechy bramki | `GET /features/installations/{id}/gateways/{serial}/features` → `gateway.devices`, `gateway.wifi` | [FAKT 2026-09-03] |
 
 Nagłówek: `Authorization: Bearer {access_token}`.
 
-Odpowiedź listy instalacji (struktura wg PyViCare):
+Odpowiedź listy instalacji **[FAKT 2026-09-03]**:
 ```
-data[].id                          → installationId
-data[].gateways[].serial           → gatewaySerial
-data[].gateways[].devices[].id     → deviceId  (np. "0", "gateway", "HEMS")
-data[].gateways[].devices[].modelId / deviceType / roles / status   [ZAŁOŻENIE: pola]
+data[].id (int)                    → installationId
+data[].description, address{street,houseNumber,zip,city,country,geolocation{latitude,longitude,timeZone}},
+       aggregatedStatus, heatingType, installationType, accessLevel, ownershipType, brand   ← PII (w fixtures zanonimizowane)
+data[].gateways[].serial (16 cyfr) → gatewaySerial; version, gatewayType ("TCU200"), aggregatedStatus, otaOngoing
+data[].gateways[].devices[].id     → deviceId: "0" (kocioł), "gateway" (TCU), "RoomControl-1"
+data[].gateways[].devices[].modelId ("E3_Vitodens_200_0421"), deviceType ("heating" | "tcu" | "roomControl"),
+       status ("Online"), roles[] (np. "type:boiler", "type:product;Vitodens_200", "interface:domesticHotWater",
+       "interface:solar", "capability:consumptionReport;thermal")
 ```
-Urządzenie o `id == "gateway"` to sama bramka (w HA pomijane). Zachować w discovery, ale domyślnie
-nie dodawać jako urządzenia użytkownika.
+`id == "gateway"` to sama bramka (1 cecha `tcu.features.wirelessRemoteController`); RoomControl ma 363 cechy
+boolean/array (pokoje). Oba zachować w discovery, domyślnie nie dodawać jako urządzenia użytkownika.
+`roles` to gotowe źródło typu urządzenia (`type:boiler`, `type:heatpump`…) — używać w discovery.
 
-## 4. Format cechy (feature) — [FAKT, z rzeczywistego zrzutu Vitodens 200-W]
+## 4. Format cechy (feature) — [FAKT 2026-09-03, zrzut Vitodens 200 E3]
+
+Pola elementu `data[]`: `feature`, `gatewayId`, `deviceId`, `timestamp`, `isEnabled`, `isReady`, `apiVersion` (=1),
+`uri`, `properties`, `commands`, opcjonalnie `deprecated` (4 cechy) i `components`. Realne komendy:
+`heating.circuits.0.operating.programs.normal` → `setTemperature {targetTemperature: number, min 3, max 37, stepping 1}`;
+`heating.dhw.temperature.main` → `setTargetTemperature {temperature: number, min 10, max 60, stepping 1,
+efficientLowerBorder/efficientUpperBorder}` — **nazwa parametru ≠ nazwa property** (`14-open-questions.md`).
+Starszy przykład (Vitodens 200-W, 2021) poniżej pozostaje strukturalnie aktualny:
 
 ```json
 {
@@ -95,17 +117,21 @@ nie dodawać jako urządzenia użytkownika.
 }
 ```
 
-Zaobserwowane typy `properties.*.type`: `number`, `string`, `boolean`, `array`, `Schedule`.
-Zaobserwowane jednostki: `celsius`, `percent`, `""`, oraz [ZAŁOŻENIE] `kilowattHour`, `cubicMeter`,
-`hour`, `liter`, `bar`, `kelvin`, `watt` — parser musi akceptować **dowolny** string jednostki.
+Zaobserwowane typy `properties.*.type` [FAKT 2026-09-03]: `number` (166), `string` (79), `boolean` (27),
+`array` (31), `Schedule` (2) na kotle; RoomControl: `boolean`, `array`.
+Zaobserwowane jednostki [FAKT 2026-09-03]: `celsius`, `percent`, `kilowattHour`, `kilowattHour/year`, `cubicMeter`,
+`hour`, `minute`, `liter`, `bar`, `kelvin`, `meter`, `degree`, `""` oraz brak pola `unit` (115 właściwości) —
+parser akceptuje **dowolny** string jednostki i jej brak.
 
-Zaobserwowane komendy: `setName` (string, maxLength 20), `setCurve`, `setSchedule`
-(`Schedule` — `entries: [{start,end,mode,position}]` per dzień, `maxEntries`, `modes`,
-`resolution`, `defaultMode`), `setMode` (`enum`), `setTemperature` (number, min/max/stepping),
-`activate` / `deactivate` (bez parametrów).
+Zaobserwowane komendy [FAKT 2026-09-03] (33 wykonywalne na kotle): `activate`, `deactivate`, `setActive`,
+`setName`, `setCurve`, `setSchedule`, `resetSchedule`, `resetDay`, `setMode`, `setTemperature`,
+`setTargetTemperature`, `setMin`, `setMax`, `setLevels`, `enable`, `disable`, `setEnabled`, `triggerOncePerWeek`,
+`triggerDaily`, `setHysteresis`, `setHysteresisSwitchOnValue`, `setHysteresisSwitchOffValue`, `changeEndDate`,
+`schedule`, `unschedule`. `Schedule` = `{mon..sun: [{mode, start, end, position}]}`.
 
 Zaobserwowane rodzaje `constraints`: `min`, `max`, `stepping`, `enum` (lista), `maxLength`,
-dla Schedule: `maxEntries`, `modes`, `resolution`, `defaultMode`, `overlapAllowed`.
+`efficientLowerBorder`/`efficientUpperBorder` (informacyjne), dla Schedule: `maxEntries`, `modes`,
+`resolution`, `defaultMode`, `overlapAllowed`.
 
 **Reguły dla parsera** (`apps/adapters/viessmann/parser.py`):
 1. Nie zakładaj istnienia żadnej konkretnej cechy. Zapisuj wszystko, co przychodzi.
@@ -160,12 +186,12 @@ wentylacji i buforów].
 
 ## 9. Lista rzeczy do sprawdzenia w portalu deweloperskim (etap 0)
 
-- [ ] Dokładne base URL i ścieżki features/commands.
-- [ ] Czas życia access/refresh tokena; czy refresh token rotuje.
+- [x] Dokładne base URL i ścieżki features/commands — `/iot/v2` (2026-09-03).
+- [x] Czas życia access tokena (3600 s); refresh token nie rotuje. [ ] Czas życia refresh tokena — obserwować.
 - [ ] Zakres limitu (per konto vs per Client ID) — test z dwoma kontami.
 - [ ] Kod HTTP i format odpowiedzi przy przekroczeniu limitu.
 - [ ] Czy istnieje limit 120/10 min.
-- [ ] Pełne zrzuty `…/features` dla **każdego** z 6 urządzeń klienta → `backend/tests/fixtures/viessmann/`.
-- [ ] Które komendy są `isExecutable` na tych urządzeniach.
-- [ ] Czy dostępne są cechy zużycia/energii (`heating.power.*`, `heating.gas.*`) dla tych modeli.
+- [x] Zrzuty `…/features` dla pierwszej instalacji (kocioł + bramka + RoomControl) → fixtures. [ ] Pozostałe instalacje klienta.
+- [x] Komendy `isExecutable` — lista w §4.
+- [x] Cechy zużycia: kocioł zwraca `kilowattHour` (36 właściwości) i `cubicMeter` (24) — grupa `statistics`.
 - [ ] Sekcja EU Data Act w portalu — czy daje dodatkowe dane.

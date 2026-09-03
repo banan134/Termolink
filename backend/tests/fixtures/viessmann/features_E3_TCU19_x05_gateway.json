@@ -1,0 +1,30 @@
+{
+  "_meta": {
+    "status": 200,
+    "captured_at": "2026-09-03T08:07:51.080644+00:00",
+    "label": "klient-1",
+    "deviceId": "gateway",
+    "model": "E3_TCU19_x05"
+  },
+  "body": {
+    "data": [
+      {
+        "feature": "tcu.features.wirelessRemoteController",
+        "gatewayId": "ANON000100000000",
+        "deviceId": "gateway",
+        "timestamp": "2026-08-31T12:23:02.329Z",
+        "isEnabled": true,
+        "isReady": true,
+        "apiVersion": 1,
+        "uri": "https://api.viessmann-climatesolutions.com/iot/v2/features/installations/9000004/gateways/ANON000100000000/devices/gateway/features/tcu.features.wirelessRemoteController",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "value": true
+          }
+        },
+        "commands": {}
+      }
+    ]
+  }
+}
