@@ -13,6 +13,7 @@ from apps.audit.services import audit
 from apps.core.exceptions import ApiError
 from apps.ingest import queue
 from apps.ingest.models import Job
+from apps.ingest.poller import dev_poll_interval
 from apps.providers import budget
 from apps.providers.models import CallKind, ProviderAccount
 from apps.tenants.models import Tenant, TenantMembership
@@ -139,12 +140,15 @@ def details(user: User, device: Device) -> dict[str, Any]:
             "lat": float(device.lat) if device.lat is not None else None,
             "lon": float(device.lon) if device.lon is not None else None,
             "poll_interval_s": device.poll_interval_s,
-            "effective_interval_s": budget.interval_for(
-                device.provider_account,
-                Device.objects.filter(
-                    provider_account=device.provider_account, archived_at__isnull=True
-                ).count(),
-                device.poll_interval_s,
+            "effective_interval_s": max(
+                budget.interval_for(
+                    device.provider_account,
+                    Device.objects.filter(
+                        provider_account=device.provider_account, archived_at__isnull=True
+                    ).count(),
+                    device.poll_interval_s,
+                ),
+                dev_poll_interval() or 0,  # same floor the scheduler applies in dev (docs/15)
             ),
             "commands_per_hour_limit": device.commands_per_hour_limit,
             "budget": budget.status(device.provider_account).as_dict(),

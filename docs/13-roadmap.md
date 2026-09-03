@@ -8,16 +8,18 @@ powinien realizować je jako osobne, małe PR-y z testami.
 Instrukcja i narzędzie: `16-etap-0-instrukcja.md` (`backend/scripts/viessmann_capture.py` robi PKCE,
 zrzuty, anonimizację i raport; ręcznie zostaje portal deweloperski i decyzje o testach limitu/offline).
 
-- [ ] Client ID w portalu Viessmann z redirect URI dev i prod.
-- [ ] Przebieg PKCE w Postmanie/httpie; zapis `expires_in`, sprawdzenie, czy refresh token rotuje.
-- [ ] Zrzuty `GET /equipment/installations?includeGateways=true` oraz `…/features` dla **każdego z 6 urządzeń** → `backend/tests/fixtures/viessmann/<model>_<deviceId>.json` (zanonimizować numery seryjne).
+- [x] Client ID w portalu Viessmann z redirect URI dev (2026-09-03; prod do dodania przy wdrożeniu).
+- [x] Przebieg PKCE (skrypt); `expires_in = 3600`, refresh token nie rotuje.
+- [x] Zrzuty `installations` i `…/features` dla pierwszej instalacji (kocioł Vitodens 200 E3, bramka TCU200, RoomControl) →
+      `backend/tests/fixtures/viessmann/` (zanonimizowane). [ ] Pozostałe urządzenia klienta (`--label` per instalacja).
 - [ ] Zrzut odpowiedzi błędnej: bramka odłączona od zasilania (GATEWAY_OFFLINE); wygasły token (401).
 - [ ] Test limitu: dwa konta Viessmann, jeden Client ID — wyczerpać limit na A, sprawdzić B. Zapisać
       kod HTTP i treść odpowiedzi przy limicie.
 - [ ] Lista komend `isExecutable=true` per urządzenie; próba wykonania jednej nieszkodliwej (np. `setName`
       na wartość identyczną) — zapis odpowiedzi.
 - [ ] Sprawdzenie sekcji EU Data Act i zakresu planu Basic.
-- [ ] Uzupełnienie `01-viessmann-api.md` — zamiana [ZAŁOŻENIE] na [FAKT] lub korekta.
+- [x] Uzupełnienie `01-viessmann-api.md` — [FAKT 2026-09-03] (m.in. `/iot/v2`, v1 = 410 GONE). Otwarte: limit
+      (A1/A3/A4), czas życia refresh tokena, bramka offline, komenda testowa.
 
 **Gotowe:** fixtures dla 6 urządzeń w repo; znany zakres limitu; znany czas życia tokenów; sekcja 9
 w `01-viessmann-api.md` odhaczona.
