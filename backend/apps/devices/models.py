@@ -227,3 +227,24 @@ class DiscoveredDevice(models.Model):
             "gatewaySerial": self.gateway_serial,
             "deviceId": self.device_id,
         }
+
+
+class FeatureLabel(models.Model):
+    """Global operator dictionary (docs/03 `feature_labels`): labels, grouping, highlights."""
+
+    feature_name_pattern = models.TextField(primary_key=True)
+    label_pl = models.TextField(blank=True, default="")
+    description_pl = models.TextField(blank=True, default="")
+    group_key = models.TextField(null=True, blank=True)  # noqa: DJ001 — NULL = rule from grouping.py
+    sort = models.IntegerField(default=100)
+    highlight = models.BooleanField(default=False)
+    report_default = models.BooleanField(default=False)
+    command_property_map = models.JSONField(default=dict, blank=True)  # {cmd: {param: property}}
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "feature_labels"
+        ordering = ["feature_name_pattern"]
+
+    def __str__(self) -> str:
+        return f"{self.feature_name_pattern} → {self.label_pl}"

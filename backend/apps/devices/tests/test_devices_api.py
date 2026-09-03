@@ -232,7 +232,9 @@ def test_features_history_and_status_history(world: dict[str, Any]) -> None:
     body = r.json()
     assert body["resolution"] == "raw" and len(body["points"]) == 30 and body["unit"] == "celsius"
     assert (
-        body["stats"]["min"] == 10 and body["stats"]["max"] == 14 and body["stats"]["count"] == 30
+        body["stats"]["min"]["value"] == 10
+        and body["stats"]["max"]["value"] == 14
+        and body["stats"]["count"] == 30
     )
     r = client.get(
         f"{base}&from={(t0 - timedelta(days=10)).isoformat()}&to={timezone.now().isoformat()}"
@@ -254,7 +256,7 @@ def test_features_history_and_status_history(world: dict[str, Any]) -> None:
 
     # the device card now shows the outside temperature as a highlight
     r = client.get(f"/api/v1/tenants/{tid}/devices")
-    assert r.json()["results"][0]["highlights"][0]["label"] == "Temp. zewnętrzna"
+    assert r.json()["results"][0]["highlights"][0]["label"] == "Temperatura zewnętrzna"
     assert r.json()["results"][0]["status"] == "offline"
 
 

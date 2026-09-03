@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from django.db import connection, transaction
+from django.db import transaction
 from django.http import HttpRequest
 from django.utils import timezone
 
@@ -18,6 +18,7 @@ from apps.providers import budget
 from apps.providers.models import CallKind, ProviderAccount
 from apps.tenants.models import Tenant, TenantMembership
 
+from . import labels as label_dict
 from .grouping import group_sort_key
 from .models import (
     Device,
@@ -26,6 +27,7 @@ from .models import (
     DeviceStatusHistory,
     DiscoveredDevice,
     FeatureDefinition,
+    FeatureJsonHistory,
     FeatureLatest,
 )
 
@@ -58,29 +60,52 @@ def get_device_or_404(
 
 
 def highlights_for(devices: list[Device]) -> dict[UUID, list[dict[str, Any]]]:
-    wanted = [(f, p) for f, p, _ in HIGHLIGHT_FALLBACK]
-    rows = FeatureLatest.objects.filter(device__in=devices).filter(
-        feature_name__in=[f for f, _ in wanted]
+    """docs/04: feature_labels.highlight=true ordered by sort; fallback list when none match."""
+    rows = list(
+        FeatureLatest.objects.filter(device__in=devices, value_num__isnull=False).order_by(
+            "feature_name", "property_name"
+        )
     )
-    by_device: dict[UUID, dict[tuple[str, str], FeatureLatest]] = {}
+    by_device: dict[UUID, list[FeatureLatest]] = {}
     for row in rows:
-        by_device.setdefault(row.device_id, {})[(row.feature_name, row.property_name)] = row
+        by_device.setdefault(row.device_id, []).append(row)
     result: dict[UUID, list[dict[str, Any]]] = {}
     for device in devices:
-        items = []
-        for feature, prop, label in HIGHLIGHT_FALLBACK:
-            hit: FeatureLatest | None = by_device.get(device.id, {}).get((feature, prop))
-            if hit is not None and hit.value_num is not None:
-                items.append(
-                    {
-                        "feature": feature,
-                        "property": prop,
-                        "label": label,
-                        "value": hit.value_num,
-                        "unit": hit.unit,
-                    }
+        candidates: list[tuple[int, dict[str, Any]]] = []
+        for row in by_device.get(device.id, []):
+            label = label_dict.resolve(row.feature_name)
+            if label and label.highlight and row.property_name == "value":
+                candidates.append(
+                    (
+                        label.sort,
+                        {
+                            "feature": row.feature_name,
+                            "property": row.property_name,
+                            "label": label.label_pl,
+                            "value": row.value_num,
+                            "unit": row.unit,
+                        },
+                    )
                 )
-        result[device.id] = items[:3]
+        if not candidates:
+            latest = {(r.feature_name, r.property_name): r for r in by_device.get(device.id, [])}
+            for feature, prop, text in HIGHLIGHT_FALLBACK:
+                hit: FeatureLatest | None = latest.get((feature, prop))
+                if hit is not None and hit.value_num is not None:
+                    candidates.append(
+                        (
+                            len(candidates),
+                            {
+                                "feature": feature,
+                                "property": prop,
+                                "label": text,
+                                "value": hit.value_num,
+                                "unit": hit.unit,
+                            },
+                        )
+                    )
+        candidates.sort(key=lambda c: c[0])
+        result[device.id] = [c[1] for c in candidates[:3]]
     return result
 
 
@@ -337,6 +362,7 @@ def features(device: Device) -> list[dict[str, Any]]:
         latest.setdefault(row.feature_name, {})[row.property_name] = row
     items = []
     for d in FeatureDefinition.objects.filter(device=device):
+        label = label_dict.resolve(d.feature_name)
         props = {}
         for name, schema in d.properties_schema.items():
             lr: FeatureLatest | None = latest.get(d.feature_name, {}).get(name)
@@ -361,8 +387,10 @@ def features(device: Device) -> list[dict[str, Any]]:
         items.append(
             {
                 "feature_name": d.feature_name,
-                "label_pl": None,  # feature_labels dictionary arrives in stage 3
-                "group_key": d.group_key,
+                "label_pl": label.label_pl if label and label.label_pl else None,
+                "description_pl": label.description_pl if label else None,
+                "group_key": (label.group_key if label and label.group_key else d.group_key),
+                "sort": label.sort if label else 1000,
                 "is_enabled": d.is_enabled,
                 "is_ready": d.is_ready,
                 "properties": props,
@@ -371,6 +399,7 @@ def features(device: Device) -> list[dict[str, Any]]:
                         "executable": c.get("isExecutable", False)
                         and name not in d.unsupported_commands,
                         "params": c.get("params", {}),
+                        "property_map": (label.command_property_map.get(name) if label else None),
                     }
                     for name, c in d.commands_schema.items()
                 },
@@ -378,21 +407,32 @@ def features(device: Device) -> list[dict[str, Any]]:
                 "last_seen_at": d.last_seen_at,
             }
         )
-    items.sort(key=lambda i: (group_sort_key(str(i["group_key"])), str(i["feature_name"])))
+    items.sort(
+        key=lambda i: (
+            group_sort_key(str(i["group_key"])),
+            int(str(i["sort"])),
+            str(i["feature_name"]),
+        )
+    )
     return items
 
 
-AUTO_RAW_MAX = timedelta(hours=48)
-AUTO_1H_MAX = timedelta(days=90)
-
-
-def auto_resolution(start: datetime, end: datetime) -> str:
-    span = end - start
-    if span <= AUTO_RAW_MAX:
-        return "raw"
-    if span <= AUTO_1H_MAX:
-        return "1h"
-    return "1d"
+def messages(device: Device, limit: int = 200) -> dict[str, Any]:
+    """docs/04: features of the `messages` group + their JSON history."""
+    current = [f for f in features(device) if f["group_key"] == "messages"]
+    names = [f["feature_name"] for f in current]
+    history = [
+        {
+            "feature_name": h.feature_name,
+            "property_name": h.property_name,
+            "ts": h.ts,
+            "value": h.value_json,
+        }
+        for h in FeatureJsonHistory.objects.filter(device=device, feature_name__in=names).order_by(
+            "-ts"
+        )[:limit]
+    ]
+    return {"features": current, "history": history}
 
 
 def history(
@@ -405,72 +445,15 @@ def history(
     resolution: str | None,
     max_points: int = 2000,
 ) -> dict[str, Any]:
-    if end <= start:
-        raise ApiError(
-            "validation_error",
-            "Zakres `from` musi być wcześniejszy niż `to`.",
-            fields={"from": ["from >= to"]},
-        )
-    if end - start > timedelta(days=5 * 366):
-        raise ApiError(
-            "validation_error", "Maksymalny zakres to 5 lat.", fields={"to": ["zakres > 5 lat"]}
-        )
-    resolution = resolution or auto_resolution(start, end)
-    unit = (
-        FeatureLatest.objects.filter(device=device, feature_name=feature, property_name=prop)
-        .values_list("unit", flat=True)
-        .first()
+    from . import history as history_mod
+
+    return history_mod.series(
+        history_mod.Series(device, feature, prop),
+        start=start,
+        end=end,
+        resolution=resolution,
+        max_points=max_points,
     )
-    where = (
-        "device_id = %s AND feature_name = %s AND property_name = %s "
-        "AND ts_polled >= %s AND ts_polled < %s AND value_num IS NOT NULL"
-    )
-    params: list[Any] = [device.id, feature, prop, start, end]
-    points: list[dict[str, Any]]
-    with connection.cursor() as cursor:
-        if resolution == "raw":
-            cursor.execute(
-                f"SELECT ts_polled, value_num FROM feature_values_rls WHERE {where} "  # noqa: S608
-                "ORDER BY ts_polled",
-                params,
-            )
-            points = [{"ts": ts, "value": v} for ts, v in cursor.fetchall()]
-            if len(points) > max_points:  # simple stride downsampling; LTTB in stage 3
-                step = len(points) / max_points
-                points = [points[int(i * step)] for i in range(max_points)]
-        else:
-            bucket = "1 hour" if resolution == "1h" else "1 day"
-            cursor.execute(  # noqa: S608 — `where` is a constant, values are bound params
-                "SELECT time_bucket(%s::interval, ts_polled) AS b, min(value_num), avg(value_num), "  # noqa: S608
-                "max(value_num), last(value_num, ts_polled), count(value_num) "
-                f"FROM feature_values_rls WHERE {where} GROUP BY b ORDER BY b",
-                [bucket, *params],
-            )
-            points = [
-                {"ts": b, "min": mn, "avg": av, "max": mx, "last": la, "count": c}
-                for b, mn, av, mx, la, c in cursor.fetchall()
-            ]
-    values = [p["value"] if resolution == "raw" else p["avg"] for p in points]
-    stats = None
-    if points:
-        last = points[-1]["value"] if resolution == "raw" else points[-1]["last"]
-        stats = {
-            "min": min(values),
-            "max": max(values),
-            "avg": sum(values) / len(values),
-            "last": last,
-            "count": len(points),
-        }
-    return {
-        "feature": feature,
-        "property": prop,
-        "unit": unit,
-        "resolution": resolution,
-        "from": start,
-        "to": end,
-        "points": points,
-        "stats": stats,
-    }
 
 
 def status_history(device: Device, limit: int = 200) -> list[dict[str, Any]]:

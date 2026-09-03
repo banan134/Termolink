@@ -78,6 +78,9 @@ ENDPOINTS: list[Endpoint] = [
     Endpoint("device-features", "GET"),
     Endpoint("device-history", "GET"),
     Endpoint("device-status-history", "GET"),
+    Endpoint("device-history-csv", "GET"),
+    Endpoint("device-messages", "GET"),
+    Endpoint("history-multi", "POST", body={"series": []}),
 ]
 
 
@@ -164,7 +167,9 @@ def url_for(endpoint: Endpoint, world: World, tenant: Tenant) -> str:
             endpoint.name,
             kwargs={"tenant_id": str(tenant.id), "device_id": str(world.jobs[f"device_{key}"].id)},
         )
-        return url + "?feature=x" if endpoint.name == "device-history" else url
+        if endpoint.name in ("device-history", "device-history-csv"):
+            return url + "?feature=x"
+        return url
     if endpoint.name in ("provider-account", "provider-discover", "provider-discovered"):
         return reverse(
             endpoint.name,
