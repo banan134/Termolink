@@ -16,6 +16,7 @@ const DevicesPage = lazy(() => import("@/features/devices/DevicesPage"));
 const DevicePage = lazy(() => import("@/features/devices/DevicePage"));
 const DeviceSettingsPage = lazy(() => import("@/features/devices/DeviceSettingsPage"));
 const ChartExplorerPage = lazy(() => import("@/features/charts/ChartExplorerPage"));
+const ChangesPage = lazy(() => import("@/features/control/ChangesPage"));
 const LabelsPage = lazy(() => import("@/features/admin/LabelsPage"));
 
 function Fallback() {
@@ -43,6 +44,7 @@ export function AppRoutes() {
           <Route path="/t/:tid/devices/:id" element={<DevicePage />} />
           <Route path="/t/:tid/devices/:id/settings" element={<DeviceSettingsPage />} />
           <Route path="/t/:tid/devices/:id/chart" element={<ChartExplorerPage />} />
+          <Route path="/t/:tid/changes" element={<ChangesPage />} />
           <Route path="/admin/labels" element={<LabelsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

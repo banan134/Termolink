@@ -15,6 +15,8 @@ export class ApiError extends Error {
   code: string;
   fields: Record<string, string[]>;
   retryAfterS?: number;
+  /** Extra keys of the error envelope (e.g. `reasons` for control_not_allowed). */
+  extra: Record<string, unknown>;
 
   constructor(status: number, body: ErrorEnvelope | null) {
     super(body?.message ?? `HTTP ${status}`);
@@ -23,6 +25,8 @@ export class ApiError extends Error {
     this.code = body?.code ?? (status === 0 ? "network" : "error");
     this.fields = body?.fields ?? {};
     this.retryAfterS = body?.retry_after_s;
+    const known = new Set(["code", "message", "fields", "retry_after_s"]);
+    this.extra = Object.fromEntries(Object.entries(body ?? {}).filter(([k]) => !known.has(k)));
   }
 }
 

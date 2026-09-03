@@ -10,14 +10,16 @@ import { useMe } from "@/features/auth/useMe";
 import { t } from "@/i18n/pl";
 import { ModeChip, StatusChip } from "./StatusChip";
 import { PropertyWidget } from "./Widgets";
+import { ControlTab } from "@/features/control/ControlTab";
 import { formatDateTime, formatValue } from "./format";
 import { groupLabel, groupRows, hasValues } from "./groups";
 import s from "./devices.module.css";
 
-type Tab = "overview" | "charts" | "all" | "messages";
+type Tab = "overview" | "charts" | "control" | "all" | "messages";
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "Przegląd" },
   { key: "charts", label: "Wykresy" },
+  { key: "control", label: t.control.tab },
   { key: "all", label: "Wszystkie cechy" },
   { key: "messages", label: "Komunikaty" },
 ];
@@ -109,6 +111,8 @@ export default function DevicePage() {
           ))}
 
       {tab === "charts" && <ChartsTab tid={tid} id={id} rows={enabledRows} />}
+
+      {tab === "control" && <ControlTab tid={tid} device={d} rows={rows} />}
 
       {tab === "all" && (
         <Card title={t.devices.allFeatures}>

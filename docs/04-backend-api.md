@@ -79,10 +79,10 @@ Konwencje:
 
 | Metoda | Ścieżka | Opis |
 |---|---|---|
-| POST | `/tenants/{tid}/devices/{id}/commands` | `{feature_name, command_name, params}` → tworzy `draft`: `{id, value_before, value_after, sensitive, constraints_ok, expires_at}`; 403 `control_not_allowed` z `reason`; 422 `constraint_violation` |
+| POST | `/tenants/{tid}/devices/{id}/commands` | `{feature_name, command_name, params}` → tworzy `draft`: `{id, status, value_before, value_after, sensitive, expires_at, …}`; 403 `control_not_allowed` z `reasons: []`; 422 `constraint_violation` (`fields`) lub `command_not_available` |
 | POST | `/tenants/{tid}/commands/{cid}/confirm` | `{acknowledged: true}`; jeśli `sensitive` → wymaga `reauth_until > now` (428 `reauth_required`) → `confirmed` + job |
-| GET | `/tenants/{tid}/commands/{cid}` | status; UI polluje do `verified`/`failed`/`verify_mismatch` |
-| GET | `/tenants/{tid}/commands` | dziennik zmian (filtry) |
+| GET | `/tenants/{tid}/commands/{cid}` | status + `job:{kind,status,error}`; UI polluje do `verified`/`failed`/`verify_mismatch`/`expired` |
+| GET | `/tenants/{tid}/commands` | dziennik zmian: `{results:[…, device_name], count}`; filtry `device`, `status`, `page`, `page_size` (≤ 200) |
 
 ## Alarmy
 

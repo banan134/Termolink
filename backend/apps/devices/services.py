@@ -128,7 +128,13 @@ def card(device: Device, highlights: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def can_control(user: User, device: Device) -> tuple[bool, list[str]]:
-    """docs/07 §Kto może wykonać komendę — conditions 1–4 and 6 (5 arrives with commands)."""
+    """docs/07 §Kto może wykonać komendę — implemented in apps.control.services."""
+    from apps.control.services import can_control as _can_control
+
+    return _can_control(user, device)
+
+
+def _legacy_can_control(user: User, device: Device) -> tuple[bool, list[str]]:
     reasons: list[str] = []
     if device.mode != DeviceMode.CONTROL:
         reasons.append("device_read_only")

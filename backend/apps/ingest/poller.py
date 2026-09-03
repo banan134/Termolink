@@ -166,6 +166,9 @@ def poll_device(device: Device, *, kind: str = CallKind.POLL) -> dict[str, Any]:
         stats = ingest(device, features)
         status.mark_online(device)
         _touch_polled(device)
+    from apps.control.services import settle_pending_after_poll
+
+    settle_pending_after_poll(device)
     return {"status": "online", "features": len(features), "history_rows": stats.history_rows}
 
 

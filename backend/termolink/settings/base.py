@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "apps.ingest",
     "apps.providers",
     "apps.devices",
+    "apps.control",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
