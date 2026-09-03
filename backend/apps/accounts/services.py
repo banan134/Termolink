@@ -129,12 +129,15 @@ def _start_session(request: HttpRequest, user: User) -> None:
         request.session.save()
     session_key = request.session.session_key
     assert session_key is not None
-    UserSession.objects.create(
+    # Django keeps the session key when the same user logs in again on a still-valid cookie
+    UserSession.objects.update_or_create(
         session_key=session_key,
-        user=user,
-        tenant_id=user.tenant_id,
-        ip=client_ip(request),
-        user_agent=request.META.get("HTTP_USER_AGENT", "")[:512],
+        defaults={
+            "user": user,
+            "tenant_id": user.tenant_id,
+            "ip": client_ip(request),
+            "user_agent": request.META.get("HTTP_USER_AGENT", "")[:512],
+        },
     )
 
 

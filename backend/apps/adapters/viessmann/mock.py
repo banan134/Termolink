@@ -78,7 +78,7 @@ class MockViessmannAdapter:
             return []
         payload = _load(candidates[0].name)
         features = parse_features(payload)
-        return [_jitter(f) for f in features]
+        return [_apply_overrides(_jitter(f)) for f in features]
 
     async def execute(
         self,
@@ -88,10 +88,52 @@ class MockViessmannAdapter:
         command: str,
         params: dict[str, Any],
     ) -> CommandResult:
+        # remember the change so the verify read (same worker process) sees the new value
+        for param, value in params.items():
+            prop = _property_for(feature, param)
+            if prop is not None:
+                _OVERRIDES.setdefault(feature.name, {})[prop] = value
         return CommandResult(ok=True, http_status=200, response={"mock": True, "params": params})
 
     def calls_per_read(self) -> int:
         return 1
+
+
+_OVERRIDES: dict[str, dict[str, Any]] = {}
+_PARAM_ALIASES = {
+    "targetTemperature": ("temperature", "value"),
+    "temperature": ("temperature", "value"),
+    "mode": ("value",),
+    "name": ("name", "value"),
+    "newSchedule": ("entries",),
+}
+
+
+def _property_for(feature: Feature, param: str) -> str | None:
+    if param in feature.properties:
+        return param
+    for candidate in _PARAM_ALIASES.get(param, ()):
+        if candidate in feature.properties:
+            return candidate
+    if len(feature.properties) == 1:
+        return next(iter(feature.properties))
+    if not feature.properties:  # control passes a definition-only Feature (no live properties)
+        aliases = _PARAM_ALIASES.get(param)
+        return aliases[0] if aliases else param
+    return None
+
+
+def _apply_overrides(feature: Feature) -> Feature:
+    from dataclasses import replace
+
+    overrides = _OVERRIDES.get(feature.name)
+    if not overrides:
+        return feature
+    props = {
+        name: (replace(prop, value=overrides[name]) if name in overrides else prop)
+        for name, prop in feature.properties.items()
+    }
+    return replace(feature, properties=props)
 
 
 def _jitter(feature: Feature) -> Feature:

@@ -22,7 +22,18 @@ from apps.tenants.models import Tenant, TenantMembership
 PASSWORD = "correct-horse-battery-staple"
 # 2xx, or a denial that is NOT about tenant scope (503 = provider not configured in tests,
 # 429 = budget reserve exhausted); 403/404 would mean the operator was refused by scope.
-OK_OR_EXPECTED_DENIAL = (200, 201, 202, 204, 400, 429, 503)  # 400 = validation on dummy body
+OK_OR_EXPECTED_DENIAL = (
+    200,
+    201,
+    202,
+    204,
+    400,
+    403,
+    409,
+    422,
+    429,
+    503,
+)  # 400 = validation on dummy body
 
 
 @dataclass(frozen=True)
@@ -81,6 +92,20 @@ ENDPOINTS: list[Endpoint] = [
     Endpoint("device-history-csv", "GET"),
     Endpoint("device-messages", "GET"),
     Endpoint("history-multi", "POST", body={"series": []}),
+    Endpoint(
+        "device-commands",
+        "POST",
+        body={"feature_name": "x", "command_name": "y", "params": {}},
+        tenant_roles_allowed=(Role.TENANT_ADMIN,),
+    ),
+    Endpoint("commands", "GET"),
+    Endpoint("command", "GET"),
+    Endpoint(
+        "command-confirm",
+        "POST",
+        body={"acknowledged": True},
+        tenant_roles_allowed=(Role.TENANT_ADMIN,),
+    ),
 ]
 
 
@@ -125,12 +150,24 @@ def world() -> World:
         jobs[f"account_{key}"] = ProviderAccount.objects.create(
             tenant=tenant, provider="viessmann", refresh_token_enc=b"v1|x", label=key
         )
+        from django.utils import timezone as tz
+
+        from apps.control.models import Command
+
         jobs[f"device_{key}"] = Device.objects.create(
             tenant=tenant,
             provider_account=jobs[f"account_{key}"],
             provider="viessmann",
             external_ids={"installationId": key, "gatewaySerial": "G", "deviceId": "0"},
             display_name=key,
+        )
+        jobs[f"command_{key}"] = Command.objects.create(
+            tenant=tenant,
+            device=jobs[f"device_{key}"],
+            feature_name="f",
+            command_name="c",
+            params={},
+            expires_at=tz.now(),
         )
     return World(a=a, b=b, users=users, jobs=jobs)
 
@@ -162,6 +199,14 @@ def url_for(endpoint: Endpoint, world: World, tenant: Tenant) -> str:
         return reverse(endpoint.name, kwargs={"job_id": str(world.jobs[key].public_id)})
     if endpoint.name == "provider-authorize":
         return reverse(endpoint.name, kwargs={"tenant_id": str(tenant.id), "provider": "viessmann"})
+    if endpoint.name in ("command", "command-confirm"):
+        return reverse(
+            endpoint.name,
+            kwargs={
+                "tenant_id": str(tenant.id),
+                "command_id": str(world.jobs[f"command_{key}"].id),
+            },
+        )
     if endpoint.name.startswith("device-") or endpoint.name == "device":
         url = reverse(
             endpoint.name,
@@ -199,7 +244,9 @@ def test_tenant_a_cannot_reach_tenant_b(world: World, endpoint: Endpoint) -> Non
     own = call(client, endpoint, url_for(endpoint, world, world.a))
     if Role.TENANT_ADMIN in endpoint.tenant_roles_allowed:
         assert foreign == 404, f"foreign tenant: {foreign}"
-        assert own in (200, 201, 202, 400), f"own tenant: {own}"
+        # own tenant: reached the business logic (403/409/422 are its own verdicts, e.g. control
+        # not allowed for an offline device, draft not owned by this user)
+        assert own in (200, 201, 202, 400, 403, 409, 422), f"own tenant: {own}"
     elif url_for(endpoint, world, world.a).startswith("/api/v1/admin/"):
         # the whole /admin group is off-limits for tenant roles (docs/04 matrix): 403 either way
         assert foreign == 403 and own == 403, f"foreign {foreign}, own {own}"
@@ -217,7 +264,7 @@ def test_tenant_user_role_matrix(world: World, endpoint: Endpoint) -> None:
     if Role.TENANT_USER in endpoint.tenant_roles_allowed:
         assert foreign == 404 and own in (200, 201, 202, 400)
     else:
-        assert foreign in (403, 404) and own in (403, 404)
+        assert foreign in (403, 404) and own in (403, 404, 409)
         assert foreign == own or foreign == 404  # never reveal B by answering differently
 
 

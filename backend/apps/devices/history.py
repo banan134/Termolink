@@ -178,8 +178,27 @@ def series(
         "points": points,
         "gaps": gaps,
         "stats": stats,
-        "markers": [],  # commands.verified (stage 4)
+        "markers": markers_for(s, start, end),
     }
+
+
+def markers_for(s: Series, start: datetime, end: datetime) -> list[dict[str, Any]]:
+    """docs/09: verified commands on the timeline — "22 °C → 24 °C, Jan Kowalski"."""
+    from apps.control.models import Command, CommandStatus
+
+    out = []
+    for c in Command.objects.filter(
+        device=s.device,
+        feature_name=s.feature,
+        status=CommandStatus.VERIFIED,
+        verified_at__gte=start,
+        verified_at__lt=end,
+    ).select_related("user"):
+        before = (c.value_before or {}).get(s.prop)
+        after = next(iter((c.value_after or {}).values()), None)
+        who = c.user.email if c.user else "operator"
+        out.append({"ts": c.verified_at, "type": "command", "label": f"{before} → {after}, {who}"})
+    return out
 
 
 def to_csv(result: dict[str, Any]) -> str:

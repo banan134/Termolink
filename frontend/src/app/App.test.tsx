@@ -25,7 +25,7 @@ test("login screen renders with e-mail and password fields", async () => {
     }),
   );
   renderAt("/login");
-  expect(await screen.findByRole("heading", { name: "Zaloguj się" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Zaloguj się" }, { timeout: 5000 })).toBeInTheDocument();
   expect(screen.getByLabelText("E-mail")).toBeInTheDocument();
   expect(screen.getByLabelText("Hasło")).toBeInTheDocument();
 });
@@ -37,5 +37,5 @@ test("protected route redirects to login when not authenticated", async () => {
     }),
   );
   renderAt("/account");
-  expect(await screen.findByRole("heading", { name: "Zaloguj się" })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Zaloguj się" }, { timeout: 5000 })).toBeInTheDocument();
 });

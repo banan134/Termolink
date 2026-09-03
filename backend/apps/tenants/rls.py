@@ -77,4 +77,5 @@ RLS_TABLES: dict[str, bool] = {
     "feature_json_history": False,
     "device_status_history": False,
     "discovered_devices": False,
+    "commands": False,
 }

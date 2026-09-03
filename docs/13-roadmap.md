@@ -67,10 +67,10 @@ status offline w ≤ 2 cykle, budżet nigdy nie przekroczony (test 24 h na stagi
 
 ## Etap 4 — Sterowanie
 
-- [ ] `control/`: `can_control`, walidacja constraints, maszyna stanów `commands`, joby execute/verify, allowlist, `unsupported_commands`, limit/h, komendy wrażliwe.
-- [ ] API commands + dziennik zmian; PATCH `mode` z reauth (operator).
-- [ ] Frontend: kontrolki per typ, `ConfirmDialog` (odliczanie, checkbox), `ReauthDialog`, polling statusu, `ScheduleEditor` (prosty).
-- [ ] Testy obowiązkowe z `07-control-flow.md`.
+- [x] `control/`: `can_control`, walidacja constraints, maszyna stanów `commands`, joby execute/verify, allowlist, `unsupported_commands`, limit/h, komendy wrażliwe.
+- [x] API commands + dziennik zmian; PATCH `mode` z reauth (operator).
+- [x] Frontend: kontrolki per typ, `ConfirmDialog` (odliczanie, checkbox), `ReauthDialog`, polling statusu, `ScheduleEditor` (prosty).
+- [x] Testy obowiązkowe z `07-control-flow.md` (zmiana temperatury → `verified` i `verify_mismatch` odtworzone na mocku HTTP; jedna nieszkodliwa komenda na prawdziwym koncie — do wykonania ręcznie, docs/16).
 
 **Gotowe:** komenda w trybie `read` odrzucona serwerowo; tenant_user 403; zmiana temperatury na
 urządzeniu testowym w stanie `verified`; `verify_mismatch` odtworzony w teście.
