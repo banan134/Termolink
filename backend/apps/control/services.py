@@ -438,6 +438,9 @@ def compare_with_latest(command: Command) -> dict[str, Any]:
         Command.objects.filter(id=command.id).update(
             status=CommandStatus.VERIFY_MISMATCH, verified_at=now
         )
+        from apps.alerts.services import on_verify_mismatch
+
+        on_verify_mismatch(command, mismatches)
         audit(
             "command.verify_mismatch",
             tenant=command.tenant,

@@ -16,6 +16,8 @@ const DevicesPage = lazy(() => import("@/features/devices/DevicesPage"));
 const DevicePage = lazy(() => import("@/features/devices/DevicePage"));
 const DeviceSettingsPage = lazy(() => import("@/features/devices/DeviceSettingsPage"));
 const ChartExplorerPage = lazy(() => import("@/features/charts/ChartExplorerPage"));
+const AlertsPage = lazy(() => import("@/features/alerts/AlertsPage"));
+const AlertRulesPage = lazy(() => import("@/features/alerts/AlertRulesPage"));
 const ChangesPage = lazy(() => import("@/features/control/ChangesPage"));
 const LabelsPage = lazy(() => import("@/features/admin/LabelsPage"));
 
@@ -45,6 +47,8 @@ export function AppRoutes() {
           <Route path="/t/:tid/devices/:id/settings" element={<DeviceSettingsPage />} />
           <Route path="/t/:tid/devices/:id/chart" element={<ChartExplorerPage />} />
           <Route path="/t/:tid/changes" element={<ChangesPage />} />
+          <Route path="/t/:tid/alerts" element={<AlertsPage />} />
+          <Route path="/t/:tid/alert-rules" element={<AlertRulesPage />} />
           <Route path="/admin/labels" element={<LabelsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

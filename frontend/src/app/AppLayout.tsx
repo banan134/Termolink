@@ -26,9 +26,14 @@ function Nav({ me }: { me: Me }) {
         </>
       )}
       {me.tenant && (
-        <NavLink to={`/t/${me.tenant.id}/changes`} className={link}>
-          {t.nav.changes}
-        </NavLink>
+        <>
+          <NavLink to={`/t/${me.tenant.id}/alerts`} className={link}>
+            {t.nav.alerts}
+          </NavLink>
+          <NavLink to={`/t/${me.tenant.id}/changes`} className={link}>
+            {t.nav.changes}
+          </NavLink>
+        </>
       )}
       {me.role === "tenant_admin" && me.tenant && (
         <NavLink to={`/t/${me.tenant.id}/users`} className={link}>

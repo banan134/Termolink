@@ -1,5 +1,11 @@
 # 14 — Pytania otwarte i rzeczy do weryfikacji
 
+## Z implementacji (etap 5)
+
+- **Alarm `worker_down` ewaluuje sam worker** — gdy padną wszystkie workery, nikt go nie otworzy.
+  Docelowo (etap 6, monitoring z docs/11) zewnętrzny healthcheck `GET /api/v1/health` powinien
+  sprawdzać także wiek ostatniego heartbeatu.
+
 ## Do weryfikacji w etapie 0 (API)
 
 | # | Pytanie | Wpływ | Gdzie zapisać odpowiedź |

@@ -47,4 +47,13 @@ E-mail: SMTP operatora (env), szablony PL.
 
 Alarm otwarty → wpis w `alerts`, e-mail (jeśli włączony w regule), widoczny w UI z możliwością
 potwierdzenia; zamykany automatycznie, gdy warunek ustąpi. Deduplikacja: jeden otwarty alarm per
-(rule, device).
+(tenant, device, type, key) — `key` to np. cecha.właściwość (zakres), cecha+hash treści (komunikat),
+id konta/workera/komendy.
+
+Implementacja (`apps/alerts/services.py`, etap 5): `evaluate_all()` uruchamiane w tiku workera co
+60 s w kontekście systemowym; `device_offline` i `device_message` działają domyślnie dla każdego
+urządzenia (reguła może zmienić `minutes`, wyłączyć typ lub e-mail; reguła per urządzenie ma
+pierwszeństwo nad regułą dla całego klienta); `verify_mismatch` otwierany hookiem z `control` (e-mail
+do autora + `ALERT_EMAIL_OPERATOR`); `provider_account` i `worker_down` (brak heartbeatu > 2 min,
+`tenant_id = NULL`) tylko do operatora. E-maile do aktywnych `tenant_admin` klienta.
+Alarmy bez `tenant_id` (worker) widzi tylko operator: `GET /admin/alerts`.

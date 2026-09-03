@@ -50,6 +50,13 @@ class Worker:
                 scheduled = schedule_polls()
             if scheduled:
                 log.info("scheduler enqueued %s poll(s)", scheduled)
+            with transaction.atomic():
+                set_context(SYSTEM)
+                from apps.alerts.services import evaluate_all
+
+                opened = evaluate_all()
+            if any(opened.values()):
+                log.info("alerts opened: %s", opened)
         except Exception:  # noqa: BLE001 — never let the scheduler kill the worker loop
             log.exception("scheduler tick failed")
         ran = 0

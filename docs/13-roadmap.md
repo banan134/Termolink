@@ -78,8 +78,8 @@ urządzeniu testowym w stanie `verified`; `verify_mismatch` odtworzony w teście
 ## Etap 5 — Raporty i alarmy
 
 - [ ] Preview, CSV, PDF (WeasyPrint, logo warunkowo), `report_files`, harmonogramy, e-mail.
-- [ ] Alarmy: reguły, otwieranie/zamykanie, deduplikacja, e-mail, UI.
-- [ ] Frontend: raporty, harmonogramy, alarmy, reguły.
+- [x] Alarmy: reguły, otwieranie/zamykanie, deduplikacja, e-mail, UI (`apps/alerts`, ewaluacja co 60 s w tiku workera; `worker_down` też ewaluowany przez worker — przy braku wszystkich workerów alarm nie powstanie, docs/14).
+- [ ] Frontend: raporty, harmonogramy. [x] Alarmy, reguły (`/t/:tid/alerts`, `/t/:tid/alert-rules`).
 
 **Gotowe:** raport miesięczny dla urządzenia testowego zgodny z danymi z bazy (test porównawczy);
 alarm offline przychodzi e-mailem po 30 min.

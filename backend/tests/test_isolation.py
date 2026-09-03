@@ -100,6 +100,19 @@ ENDPOINTS: list[Endpoint] = [
     ),
     Endpoint("commands", "GET"),
     Endpoint("command", "GET"),
+    Endpoint("alerts", "GET"),
+    Endpoint("alert", "PATCH", body={"acknowledged": True}),
+    Endpoint("alert-rules", "GET"),
+    Endpoint(
+        "alert-rules",
+        "POST",
+        body={"type": "device_message"},
+        tenant_roles_allowed=(Role.TENANT_ADMIN,),
+    ),
+    Endpoint(
+        "alert-rule", "PATCH", body={"enabled": False}, tenant_roles_allowed=(Role.TENANT_ADMIN,)
+    ),
+    Endpoint("alert-rule", "DELETE", tenant_roles_allowed=(Role.TENANT_ADMIN,)),
     Endpoint(
         "command-confirm",
         "POST",
@@ -161,6 +174,12 @@ def world() -> World:
             external_ids={"installationId": key, "gatewaySerial": "G", "deviceId": "0"},
             display_name=key,
         )
+        from apps.alerts.models import Alert, AlertRule
+
+        jobs[f"alert_{key}"] = Alert.objects.create(
+            tenant=tenant, type="device_offline", message="m"
+        )
+        jobs[f"rule_{key}"] = AlertRule.objects.create(tenant=tenant, type="device_message")
         jobs[f"command_{key}"] = Command.objects.create(
             tenant=tenant,
             device=jobs[f"device_{key}"],
@@ -199,6 +218,16 @@ def url_for(endpoint: Endpoint, world: World, tenant: Tenant) -> str:
         return reverse(endpoint.name, kwargs={"job_id": str(world.jobs[key].public_id)})
     if endpoint.name == "provider-authorize":
         return reverse(endpoint.name, kwargs={"tenant_id": str(tenant.id), "provider": "viessmann"})
+    if endpoint.name == "alert":
+        return reverse(
+            endpoint.name,
+            kwargs={"tenant_id": str(tenant.id), "alert_id": str(world.jobs[f"alert_{key}"].id)},
+        )
+    if endpoint.name == "alert-rule":
+        return reverse(
+            endpoint.name,
+            kwargs={"tenant_id": str(tenant.id), "rule_id": str(world.jobs[f"rule_{key}"].id)},
+        )
     if endpoint.name in ("command", "command-confirm"):
         return reverse(
             endpoint.name,
