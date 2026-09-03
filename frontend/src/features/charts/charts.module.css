@@ -1,0 +1,124 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-3);
+}
+.spacer {
+  flex: 1;
+}
+.select {
+  min-height: 36px;
+  padding: 0 var(--sp-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-sm);
+}
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  align-items: center;
+  margin-bottom: var(--sp-3);
+  font-size: var(--fs-sm);
+}
+.picker input {
+  margin-left: var(--sp-1);
+  min-height: 36px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  padding: 0 var(--sp-2);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.error {
+  color: var(--danger);
+  font-size: var(--fs-xs);
+}
+.muted {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.link {
+  color: var(--accent);
+}
+.linkButton {
+  background: none;
+  border: 0;
+  padding: var(--sp-1) 0;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  columns: 2;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--sp-2) var(--sp-3);
+}
+.statLabel {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.statValue {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--brand-primary);
+}
+.statSub {
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 2px var(--sp-3);
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: var(--fs-xs);
+}
+.chip button {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: var(--fs-sm);
+}
+.addSeries {
+  display: inline-flex;
+  gap: var(--sp-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.addSeriesForm {
+  display: inline-flex;
+  gap: var(--sp-1);
+  align-items: center;
+  flex-wrap: wrap;
+}

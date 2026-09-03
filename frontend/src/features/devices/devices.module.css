@@ -171,3 +171,127 @@
   height: 220px;
   display: block;
 }
+
+/* --- stage 3: tabs, sections, widgets --- */
+.tabs {
+  display: flex;
+  gap: var(--sp-1);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--sp-4);
+  overflow-x: auto;
+}
+.tab {
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: var(--sp-2) var(--sp-3);
+  color: var(--text-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tabActive {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.section {
+  margin-bottom: var(--sp-6);
+}
+.sectionTitle {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-lg);
+  color: var(--brand-primary);
+}
+.widgets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--sp-3);
+}
+.tileLink,
+.tileStatic {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-3);
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+.tileLink:hover {
+  border-color: var(--brand-secondary);
+}
+.tileUnit {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.json {
+  margin: var(--sp-2) 0;
+  padding: var(--sp-2);
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-xs);
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+.chartGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--sp-3);
+}
+.chartCard {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-3);
+  color: inherit;
+  text-decoration: none;
+}
+.chartCard:hover {
+  border-color: var(--brand-secondary);
+}
+.chartCardTitle {
+  font-weight: 600;
+}
+.messageRow {
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--border);
+}
+.messageRow:first-child {
+  border-top: 0;
+}
+.buttonLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-strong);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  text-decoration: none;
+}
+.cellInput {
+  width: 100%;
+  min-width: 90px;
+  min-height: 32px;
+  padding: 0 var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-sm);
+}
+.iconButton {
+  background: none;
+  border: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-lg);
+  cursor: pointer;
+}

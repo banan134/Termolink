@@ -4,6 +4,24 @@
  */
 
 export interface paths {
+    "/api/v1/admin/feature-labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET/PUT /admin/feature-labels — global dictionary, superadmin only (docs/04). */
+        get: operations["admin_feature_labels_list"];
+        /** @description GET/PUT /admin/feature-labels — global dictionary, superadmin only (docs/04). */
+        put: operations["admin_feature_labels_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/technicians": {
         parameters: {
             query?: never;
@@ -438,6 +456,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenants/{tenant_id}/devices/{device_id}/history.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tenants_devices_history.csv_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/devices/{device_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tenants_devices_messages_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tenants/{tenant_id}/devices/{device_id}/refresh": {
         parameters: {
             query?: never;
@@ -464,6 +514,23 @@ export interface paths {
         get: operations["tenants_devices_status_history_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenant_id}/history/multi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description docs/04: up to 6 series for comparisons in the chart explorer. */
+        post: operations["tenants_history_multi_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -608,9 +675,35 @@ export interface components {
             gatewaySerial: string;
             deviceId: string;
         };
+        FeatureLabel: {
+            pattern: string;
+            label_pl: string;
+            /** @default  */
+            description_pl: string;
+            group_key?: string | null;
+            /** @default 100 */
+            sort: number;
+            /** @default false */
+            highlight: boolean;
+            /** @default false */
+            report_default: boolean;
+            command_property_map?: {
+                [key: string]: unknown;
+            };
+        };
         Health: {
             status: string;
             db: boolean;
+        };
+        HistoryMulti: {
+            series: components["schemas"]["Series"][];
+            /** Format: date-time */
+            to?: string;
+            resolution?: components["schemas"]["ResolutionEnum"];
+            /** @default 2000 */
+            max_points: number;
+            /** Format: date-time */
+            from?: string;
         };
         InvitationAccept: {
             token: string;
@@ -734,6 +827,13 @@ export interface components {
             email: string;
         };
         /**
+         * @description * `raw` - raw
+         *     * `1h` - 1h
+         *     * `1d` - 1d
+         * @enum {string}
+         */
+        ResolutionEnum: "raw" | "1h" | "1d";
+        /**
          * @description * `superadmin` - Superadmin
          *     * `technician` - Serwisant
          *     * `tenant_admin` - Administrator klienta
@@ -741,6 +841,13 @@ export interface components {
          * @enum {string}
          */
         Role5d4Enum: "superadmin" | "technician" | "tenant_admin" | "tenant_user";
+        Series: {
+            /** Format: uuid */
+            device_id: string;
+            feature: string;
+            /** @default value */
+            property: string;
+        };
         Session: {
             /** Format: uuid */
             id: string;
@@ -833,6 +940,49 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    admin_feature_labels_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureLabel"][];
+                };
+            };
+        };
+    };
+    admin_feature_labels_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeatureLabel"][];
+                "application/x-www-form-urlencoded": components["schemas"]["FeatureLabel"][];
+                "multipart/form-data": components["schemas"]["FeatureLabel"][];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_technicians_list: {
         parameters: {
             query?: never;
@@ -1591,6 +1741,48 @@ export interface operations {
             };
         };
     };
+    "tenants_devices_history.csv_retrieve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_devices_messages_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     tenants_devices_refresh_create: {
         parameters: {
             query?: never;
@@ -1623,6 +1815,32 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tenants_history_multi_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HistoryMulti"];
+                "application/x-www-form-urlencoded": components["schemas"]["HistoryMulti"];
+                "multipart/form-data": components["schemas"]["HistoryMulti"];
+            };
+        };
         responses: {
             /** @description No response body */
             200: {
