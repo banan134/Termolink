@@ -65,4 +65,5 @@ Etap 2 startuje od parsera pisanego wyłącznie pod te pliki (`12-testing.md`).
 | `Invalid redirection URI` | Redirect URI w portalu musi być **identyczny** znak w znak: `http://localhost:8765/oauth/viessmann/callback` (http, port 8765, bez ukośnika na końcu). Jeśli masz zarejestrowany inny lokalny adres, podaj go: `--redirect-uri http://localhost:8080/oauth/viessmann/callback` — skrypt nasłuchuje na porcie z tego adresu (zatrzymaj wtedy Caddy, jeśli używa tego portu). Zmiany w portalu mogą działać z opóźnieniem. |
 | `invalid_client` | Client ID jeszcze nieaktywny (do 1 h) albo literówka |
 | `installations` = 401 | token nie ma zakresu `IoT User` — sprawdź, czy klient ma włączone IoT |
+| `410 GONE … Replacement: GET /iot/v2/…` | API v1 wyłączone (grudzień 2025); skrypt używa `/iot/v2` i sam podąża za zamiennikiem z odpowiedzi, zapisując to w `capture_report.json` → `deprecations` |
 | brak `refresh_token` w odpowiedzi | zakres `offline_access` nie został przyznany; zapisz to w raporcie — wpływa na UX (`01` §2) |
