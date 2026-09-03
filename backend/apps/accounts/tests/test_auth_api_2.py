@@ -8,7 +8,7 @@ import pyotp
 import pytest
 from django.core import mail
 from django.core.cache import cache
-from django.test import Client
+from django.test import Client, override_settings
 from django.utils import timezone
 
 from apps.accounts.api import LoginThrottle
@@ -179,6 +179,7 @@ def test_reauth_requires_totp_when_enabled(client: Client, user: User) -> None:
 
 
 @pytest.mark.django_db
+@override_settings(PUBLIC_BASE_URL="http://localhost:8080")
 def test_password_reset_flow(client: Client, user: User) -> None:
     assert (
         post(client, "/password/reset-request", {"email": "nobody@example.com"}).status_code == 204

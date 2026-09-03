@@ -181,7 +181,7 @@ DEFAULT_FROM_EMAIL = "Termolink <noreply@termolink.local>"
 TOKEN_MASTER_KEY: str = env("TOKEN_MASTER_KEY", default="")
 VIESSMANN_CLIENT_ID: str = env("VIESSMANN_CLIENT_ID", default="")
 VIESSMANN_API_BASE: str = env(
-    "VIESSMANN_API_BASE", default="https://api.viessmann-climatesolutions.com/iot/v1"
+    "VIESSMANN_API_BASE", default="https://api.viessmann-climatesolutions.com/iot/v2"
 )
 VIESSMANN_IAM_BASE: str = env(
     "VIESSMANN_IAM_BASE", default="https://iam.viessmann-climatesolutions.com/idp/v3"

@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "status": 401,
+    "captured_at": "2026-09-03T08:07:54.086160+00:00",
+    "label": "klient-1"
+  },
+  "body": {
+    "viErrorId": "req-bb7610e79dbc429ba6a16f0413ffc5a4",
+    "statusCode": 401,
+    "errorType": "UNAUTHORIZED",
+    "message": "Request contain invalid token",
+    "error": "NO TOKEN AVAILABLE"
+  }
+}

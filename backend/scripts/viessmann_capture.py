@@ -49,14 +49,42 @@ SCOPE = "IoT User offline_access"
 DEFAULT_REDIRECT_URI = "http://localhost:8765/oauth/viessmann/callback"
 
 SERIAL_RE = re.compile(r"\b[0-9]{16}\b")  # Viessmann gateway/device serials are 16 digits
+# PII in installation/gateway objects (docs/08 §Prywatność): dropped or replaced, never kept.
+PII_KEYS = {
+    "address",
+    "geolocation",
+    "buildingName",
+    "buildingEmail",
+    "buildingPhone",
+    "servicedBy",
+}
+PII_TEXT_KEYS = {"description"}
 
 
-def anonymise(obj: object, mapping: dict[str, str]) -> object:
-    """Replace 16-digit serials and installation ids consistently with placeholders."""
+def collect_installation_ids(payload: object, mapping: dict[str, str]) -> None:
+    """Installation ids are short integers — register them so every occurrence is replaced."""
+    data: Any = payload.get("data", []) if isinstance(payload, dict) else payload
+    if not isinstance(data, list):
+        return
+    for inst in data:
+        if isinstance(inst, dict) and inst.get("id") is not None:
+            mapping.setdefault(str(inst["id"]), f"9{len(mapping) + 1:06d}")
+
+
+def anonymise(obj: object, mapping: dict[str, str], parent_key: str | None = None) -> object:
+    """Replace serials/installation ids consistently; drop address & building PII."""
     if isinstance(obj, dict):
-        return {k: anonymise(v, mapping) for k, v in obj.items()}
+        out: dict[str, object] = {}
+        for k, v in obj.items():
+            if k in PII_KEYS:
+                out[k] = None
+            elif k in PII_TEXT_KEYS and isinstance(v, str) and v:
+                out[k] = "ANON"
+            else:
+                out[k] = anonymise(v, mapping, k)
+        return out
     if isinstance(obj, list):
-        return [anonymise(v, mapping) for v in obj]
+        return [anonymise(v, mapping, parent_key) for v in obj]
     if isinstance(obj, str):
 
         def repl(m: re.Match[str]) -> str:
@@ -64,8 +92,35 @@ def anonymise(obj: object, mapping: dict[str, str]) -> object:
             mapping.setdefault(key, f"ANON{len(mapping) + 1:04d}{'0' * (16 - 8)}")
             return mapping[key]
 
-        return SERIAL_RE.sub(repl, obj)
+        text = SERIAL_RE.sub(repl, obj)
+        for raw, anon in mapping.items():
+            if raw.isdigit() and len(raw) < 16 and raw in text:
+                text = re.sub(rf"(?<![0-9]){re.escape(raw)}(?![0-9])", anon, text)
+        return text
+    if isinstance(obj, int) and not isinstance(obj, bool) and str(obj) in mapping:
+        return int(mapping[str(obj)])
     return obj
+
+
+def sanitize_directory(out: Path) -> None:
+    """Re-anonymise every fixture + the report in place (idempotent)."""
+    mapping_file = out / "serial_mapping.json"
+    mapping: dict[str, str] = (
+        json.loads(mapping_file.read_text(encoding="utf-8")) if mapping_file.exists() else {}
+    )
+    inst = out / "installations.json"
+    if inst.exists():
+        doc = json.loads(inst.read_text(encoding="utf-8"))
+        collect_installation_ids(doc.get("body", doc), mapping)
+    for path in sorted(out.glob("*.json")):
+        if path.name == "serial_mapping.json":
+            continue
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        path.write_text(
+            json.dumps(anonymise(doc, mapping), indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+        print("  sanitised", path.name)
+    mapping_file.write_text(json.dumps(mapping, indent=2), encoding="utf-8")
 
 
 class Capture:
@@ -218,6 +273,7 @@ class Capture:
         status, installations = self.get(
             "/equipment/installations?includeGateways=true", "installations"
         )
+        collect_installation_ids(installations, self.mapping)
         self._write("installations", installations, status)
         if status != 200:
             print("installations failed:", status, installations)
@@ -338,7 +394,8 @@ class Capture:
     def finish(self) -> None:
         self.report["anonymised_ids"] = len(self.mapping)
         (self.out / "capture_report.json").write_text(
-            json.dumps(self.report, indent=2, ensure_ascii=False), encoding="utf-8"
+            json.dumps(anonymise(self.report, self.mapping), indent=2, ensure_ascii=False),
+            encoding="utf-8",
         )
         (self.out / ".gitignore").write_text(
             "# real → placeholder mapping stays local\nserial_mapping.json\n", encoding="utf-8"
@@ -353,11 +410,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--client-id", required=True)
+    parser.add_argument("--client-id", default="")
     parser.add_argument("--out", default="backend/tests/fixtures/viessmann")
     parser.add_argument("--label", default="client-1")
     parser.add_argument("--probe-limit", type=int, default=0)
     parser.add_argument("--skip-refresh", action="store_true")
+    parser.add_argument(
+        "--sanitize-only",
+        action="store_true",
+        help="nie wołaj API; tylko ponownie zanonimizuj pliki w --out (idempotentne)",
+    )
     parser.add_argument(
         "--redirect-uri",
         default=DEFAULT_REDIRECT_URI,
@@ -365,6 +427,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.sanitize_only:
+        sanitize_directory(Path(args.out))
+        return
+    if not args.client_id:
+        sys.exit("--client-id jest wymagane (poza --sanitize-only)")
     cap = Capture(args.client_id, Path(args.out), args.label, args.redirect_uri)
     cap.authorize()
     cap.capture_all(args.probe_limit)

@@ -5,13 +5,13 @@
 | # | Pytanie | Wpływ | Gdzie zapisać odpowiedź |
 |---|---|---|---|
 | A1 | Czy limit 1450/24 h jest per konto użytkownika, czy per Client ID? | Decyduje o wykonalności skali 500 urządzeń bez umowy z Viessmann | `01-viessmann-api.md` §5 |
-| A2 | Czas życia refresh tokena; czy rotuje | Jak często klient musi ponownie autoryzować | `01` §2 |
+| A2 | Czas życia refresh tokena; czy rotuje | **Częściowo (2026-09-03): nie rotuje; access 3600 s; czas życia refresh — obserwować** | `01` §2 |
 | A3 | Kod HTTP i treść przy przekroczeniu limitu | Mapowanie `RateLimitedError` | `01` §6, `adapters/viessmann/errors.py` |
 | A4 | Czy istnieje limit 120/10 min | `short_limit` | `01` §5 |
-| A5 | Dokładne ścieżki features/commands i base URL | konfiguracja | `01` §3 |
+| A5 | Dokładne ścieżki features/commands i base URL | **Odpowiedziane (2026-09-03): `/iot/v2`, v1 = 410 GONE** | `01` §3 |
 | A6 | Które cechy zużycia/energii zwraca API dla 6 urządzeń klienta | zakres raportu `energy` | fixtures |
 | A7 | Czy `POST commands` zwraca coś poza statusem (np. nowy stan) | weryfikacja | `01` §3 |
-| A8 | Czy urządzenia typu `gateway`/`HEMS` mają cechy warte pokazania | discovery | `01` §3 |
+| A8 | Czy urządzenia typu `gateway`/`HEMS` mają cechy warte pokazania | **Odpowiedziane (2026-09-03): bramka TCU ma 1 cechę; RoomControl 363 (pokoje) — nie dodawać domyślnie** | `01` §3 |
 
 ## Do decyzji operatora (Wodmiar)
 

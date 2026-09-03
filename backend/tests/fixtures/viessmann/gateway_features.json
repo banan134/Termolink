@@ -1,0 +1,138 @@
+{
+  "_meta": {
+    "status": 200,
+    "captured_at": "2026-09-03T08:07:53.691085+00:00",
+    "label": "klient-1"
+  },
+  "body": {
+    "data": [
+      {
+        "feature": "gateway.devices",
+        "gatewayId": "ANON000100000000",
+        "timestamp": "2026-08-31T12:23:01.880Z",
+        "isEnabled": true,
+        "isReady": true,
+        "apiVersion": 1,
+        "uri": "https://api.viessmann-climatesolutions.com/iot/v2/features/installations/9000004/gateways/ANON000100000000/features/gateway.devices",
+        "properties": {
+          "devices": {
+            "type": "DeviceList",
+            "value": [
+              {
+                "id": "gateway",
+                "fingerprint": "tcu:0019;33.326.2418.91;0019.0507.2536.0006",
+                "modelId": "E3_TCU19_x05",
+                "modelVersion": "rPK9_2NxvR-xYW2DFE2JUfxgrWk",
+                "name": "E3_TCU19_x05",
+                "type": "tcu",
+                "roles": [
+                  "capability:coordinator;zigbee",
+                  "capability:lanOne",
+                  "capability:lanTwo",
+                  "capability:src",
+                  "capability:zigbeeCoordinator",
+                  "interface:telemetryControlUnit;capability",
+                  "interface:zigbee",
+                  "type:E3",
+                  "type:coordinator;zigbee",
+                  "type:gateway;TCU200",
+                  "type:product;TCU200"
+                ],
+                "status": "online"
+              },
+              {
+                "id": "0",
+                "fingerprint": "ecu;ANON000200000000;0002.0516.2110.0507;0002.0608.0300.0002",
+                "modelId": "E3_Vitodens_200_0421",
+                "modelVersion": "26sio6mY4GkMwplY54m8jbfCrLo",
+                "name": "E3_Vitodens_200_0421",
+                "type": "heating",
+                "roles": [
+                  "capability:backup;0002_HMU_VD2",
+                  "capability:consumptionReport;electric",
+                  "capability:consumptionReport;thermal",
+                  "capability:monetization;AdvancedReport",
+                  "capability:monetization;DhwSavingsCalculator",
+                  "capability:productionReport;electric",
+                  "capability:productionReport;thermal",
+                  "capability:service;AdvancedReport",
+                  "capability:service;DhwSavingsCalculator",
+                  "interface:bufferCylinder",
+                  "interface:building",
+                  "interface:burner",
+                  "interface:circuit;heating",
+                  "interface:combustion",
+                  "interface:dateTime",
+                  "interface:domesticHotWater",
+                  "interface:heating",
+                  "interface:messages",
+                  "interface:outsideTemperature",
+                  "interface:reset",
+                  "interface:sensors;pressure",
+                  "interface:solar",
+                  "interface:system",
+                  "interface:telemetryControlUnit",
+                  "interface:thermal",
+                  "interface:zigbeeActivation",
+                  "state:commissioning;inactive",
+                  "type:E3",
+                  "type:boiler",
+                  "type:brand;Viessmann",
+                  "type:businessDomain;heating",
+                  "type:dhw;integrated",
+                  "type:gatewayConfiguration",
+                  "type:heating;integrated",
+                  "type:product;Vitodens_200",
+                  "type:productFamily;Vitodens"
+                ],
+                "status": "online"
+              },
+              {
+                "id": "RoomControl-1",
+                "fingerprint": "src:0019;33.326.2401.59;0046.0504.2513.0019",
+                "modelId": "E3_RoomControl_One_19_04",
+                "modelVersion": "yAiBzrYm8sBERd8h39X3uldVyF0",
+                "name": "E3_RoomControl_One_19_04",
+                "type": "roomControl",
+                "roles": [
+                  "capability:coordinator;zigbee",
+                  "capability:monetization;FTDC",
+                  "capability:monetization;OWD",
+                  "capability:src;FTDC",
+                  "capability:src;OWD",
+                  "capability:src;holiday",
+                  "capability:zigbeeCoordinator",
+                  "interface:smartRoomControl;rooms",
+                  "interface:smartRoomControl;roomsOthers",
+                  "interface:zigbee",
+                  "type:E3",
+                  "type:coordinator;zigbee",
+                  "type:virtual;smartRoomControl"
+                ],
+                "status": "online"
+              }
+            ]
+          }
+        },
+        "commands": {}
+      },
+      {
+        "feature": "gateway.wifi",
+        "gatewayId": "ANON000100000000",
+        "timestamp": "2026-09-03T06:17:32.843Z",
+        "isEnabled": true,
+        "isReady": true,
+        "apiVersion": 1,
+        "uri": "https://api.viessmann-climatesolutions.com/iot/v2/features/installations/9000004/gateways/ANON000100000000/features/gateway.wifi",
+        "properties": {
+          "strength": {
+            "type": "number",
+            "value": -51,
+            "unit": ""
+          }
+        },
+        "commands": {}
+      }
+    ]
+  }
+}

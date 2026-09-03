@@ -1,0 +1,104 @@
+{
+  "captured_at": "2026-09-03T08:07:46.322495+00:00",
+  "calls": [
+    {
+      "name": "token_exchange",
+      "url": "https://iam.viessmann-climatesolutions.com/idp/v3/token",
+      "status": 200,
+      "ms": 1542,
+      "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+      }
+    },
+    {
+      "name": "installations",
+      "url": "https://api.viessmann-climatesolutions.com/iot/v2/equipment/installations?includeGateways=true",
+      "status": 200,
+      "ms": 222,
+      "headers": {
+        "Content-Type": "application/json; charset=utf-8"
+      }
+    },
+    {
+      "name": "features_E3_Vitodens_200_0421_0",
+      "url": "https://api.viessmann-climatesolutions.com/iot/v2/features/installations/9000004/gateways/ANON000100000000/devices/0/features",
+      "status": 200,
+      "ms": 315,
+      "headers": {
+        "Content-Type": "application/json; charset=utf-8"
+      }
+    },
+    {
+      "name": "features_E3_TCU19_x05_gateway",
+      "url": "https://api.viessmann-climatesolutions.com/iot/v2/features/installations/9000004/gateways/ANON000100000000/devices/gateway/features",
+      "status": 200,
+      "ms": 208,
+      "headers": {
+        "Content-Type": "application/json; charset=utf-8"
+      }
+    },
+    {
+      "name": "features_E3_RoomControl_One_19_04_RoomControl-1",
+      "url": "https://api.viessmann-climatesolutions.com/iot/v2/features/installations/9000004/gateways/ANON000100000000/devices/RoomControl-1/features",
+      "status": 200,
+      "ms": 367,
+      "headers": {
+        "Content-Type": "application/json; charset=utf-8"
+      }
+    },
+    {
+      "name": "gateway_features",
+      "url": "https://api.viessmann-climatesolutions.com/iot/v2/features/installations/9000004/gateways/ANON000100000000/features",
+      "status": 200,
+      "ms": 223,
+      "headers": {
+        "Content-Type": "application/json; charset=utf-8"
+      }
+    },
+    {
+      "name": "missing_feature",
+      "url": "https://api.viessmann-climatesolutions.com/iot/v2/features/installations/9000004/gateways/ANON000100000000/devices/0/features/does.not.exist",
+      "status": 404,
+      "ms": 227,
+      "headers": {
+        "Content-Type": "application/json; charset=utf-8"
+      }
+    },
+    {
+      "name": "invalid_token",
+      "url": "https://api.viessmann-climatesolutions.com/iot/v2/equipment/installations",
+      "status": 401,
+      "ms": 164,
+      "headers": {
+        "Content-Type": "application/json; charset=utf-8"
+      }
+    },
+    {
+      "name": "token_refresh",
+      "url": "https://iam.viessmann-climatesolutions.com/idp/v3/token",
+      "status": 200,
+      "ms": 218,
+      "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+      }
+    }
+  ],
+  "token": {
+    "expires_in": 3600,
+    "scope": null,
+    "token_type": "Bearer",
+    "has_refresh_token": true,
+    "keys": [
+      "access_token",
+      "expires_in",
+      "refresh_token",
+      "token_type"
+    ]
+  },
+  "refresh": {
+    "status": 200,
+    "expires_in": 3600,
+    "refresh_token_rotates": false
+  },
+  "anonymised_ids": 3
+}

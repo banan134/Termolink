@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "status": 404,
+    "captured_at": "2026-09-03T08:07:53.920141+00:00",
+    "label": "klient-1"
+  },
+  "body": {
+    "viErrorId": "00-b0d0d09fd1d282fd4e94b6247c7117c4-56fa16e1934fa381-00",
+    "statusCode": 404,
+    "errorType": "FEATURE_NOT_FOUND",
+    "message": "Feature not found",
+    "extendedPayload": {}
+  }
+}
