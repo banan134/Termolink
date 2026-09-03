@@ -1,0 +1,113 @@
+pattern;label_pl;description_pl;group_key;sort;highlight;report_default;command_property_map
+heating.sensors.temperature.outside;Temperatura zewnętrzna;Czujnik temperatury zewnętrznej;sensors;10;1;1;
+heating.calculated.temperature.outside;Temperatura zewnętrzna (uśredniona);Wartość tłumiona używana przez regulację pogodową;sensors;15;0;0;
+heating.sensors.pressure.supply;Ciśnienie w instalacji;Ciśnienie wody grzewczej;sensors;40;1;1;
+heating.sensors.temperature.hydraulicSeparator;Temperatura sprzęgła hydraulicznego;;sensors;45;0;0;
+heating.boiler.sensors.temperature.commonSupply;Temperatura zasilania kotła;Wspólne zasilanie za kotłem;heat_source;20;1;1;
+heating.boiler.temperature;Temperatura zadana kotła;;heat_source;21;0;0;
+heating.boiler.pumps.internal;Pompa wewnętrzna kotła;;heat_source;30;0;0;
+heating.boiler.pumps.internal.target;Wysterowanie pompy wewnętrznej;;heat_source;31;0;0;
+heating.boiler.serial;Numer seryjny kotła;;device;90;0;0;
+heating.burners;Palniki;;heat_source;5;0;0;
+heating.burners.*;Palnik aktywny;;heat_source;10;0;1;
+heating.burners.*.modulation;Modulacja palnika;Moc palnika w procentach;heat_source;12;1;1;
+heating.burners.*.statistics;Statystyka palnika;Godziny pracy i liczba startów (liczniki narastające);statistics;10;0;1;
+heating.burners.*.demand.modulation;Żądana modulacja palnika;;heat_source;13;0;0;
+heating.burners.*.demand.temperature;Żądana temperatura palnika;;heat_source;14;0;0;
+heating.circuits;Obiegi grzewcze;;other;5;0;0;
+heating.circuits.*;Obieg grzewczy;Aktywność, nazwa i typ obiegu;;5;0;0;{"setName": {"name": "name"}}
+heating.circuits.*.name;Nazwa obiegu;;;6;0;0;{"setName": {"name": "name"}}
+heating.circuits.*.sensors.temperature.supply;Temperatura zasilania obiegu;;;10;1;1;
+heating.circuits.*.sensors.temperature.room;Temperatura w pomieszczeniu;;;11;0;1;
+heating.circuits.*.temperature;Temperatura zadana zasilania;;;12;0;0;
+heating.circuits.*.temperature.levels;Zakres temperatury zasilania;Minimum i maksimum;;13;0;0;
+heating.circuits.*.operating.modes.active;Tryb pracy obiegu;standby / heating / …;;20;0;1;{"setMode": {"mode": "value"}}
+heating.circuits.*.operating.modes.heating;Tryb: grzanie;;;21;0;0;
+heating.circuits.*.operating.modes.standby;Tryb: czuwanie;;;22;0;0;
+heating.circuits.*.operating.programs.active;Aktywny program;;;30;0;1;
+heating.circuits.*.operating.programs.normal;Program: normalny;Temperatura zadana dla programu normalnego;;31;0;0;{"setTemperature": {"targetTemperature": "temperature"}}
+heating.circuits.*.operating.programs.comfort;Program: komfort;;;32;0;0;{"setTemperature": {"targetTemperature": "temperature"}}
+heating.circuits.*.operating.programs.reduced;Program: obniżony;;;33;0;0;{"setTemperature": {"targetTemperature": "temperature"}}
+heating.circuits.*.operating.programs.reducedEnergySaving;Obniżenie oszczędnościowe;;;34;0;0;
+heating.circuits.*.operating.programs.standby;Program: czuwanie;;;35;0;0;
+heating.circuits.*.operating.programs.summerEco;Tryb letni (eco);;;36;0;0;
+heating.circuits.*.operating.programs.forcedLastFromSchedule;Wymuszenie ostatniego programu z harmonogramu;;;37;0;0;
+heating.circuits.*.heating.curve;Krzywa grzewcza;Nachylenie i przesunięcie;;40;0;0;{"setCurve": {"slope": "slope", "shift": "shift"}}
+heating.circuits.*.heating.schedule;Harmonogram grzania;;;41;0;0;{"setSchedule": {"newSchedule": "entries"}}
+heating.circuits.*.circulation.pump;Pompa obiegowa;;;50;0;0;
+heating.circuits.*.frostprotection;Ochrona przed zamarzaniem;;;51;0;0;
+heating.circuits.*.configuration.summerEco.absolute;Próg trybu letniego;;;52;0;0;
+heating.circuits.*.zone.mode;Tryb strefy;;;60;0;0;
+heating.circuits.*.zone.demand;Zapotrzebowanie strefy;;;61;0;0;
+heating.dhw;Ciepła woda użytkowa;Stan przygotowania CWU;dhw;5;0;1;
+heating.dhw.temperature.main;Temperatura zadana CWU;;dhw;10;0;1;{"setTargetTemperature": {"temperature": "value"}}
+heating.dhw.sensors.temperature.hotWaterStorage;Temperatura zasobnika CWU;;dhw;11;1;1;
+heating.dhw.sensors.temperature.dhwCylinder;Temperatura zasobnika CWU (czujnik);;dhw;12;0;0;
+heating.dhw.sensors.temperature.outlet;Temperatura wylotu CWU;;dhw;13;0;0;
+heating.dhw.operating.modes.active;Tryb CWU;;dhw;20;0;1;{"setMode": {"mode": "value"}}
+heating.dhw.operating.modes.balanced;Tryb CWU: zrównoważony;;dhw;21;0;0;
+heating.dhw.operating.modes.off;Tryb CWU: wyłączony;;dhw;22;0;0;
+heating.dhw.schedule;Harmonogram CWU;;dhw;30;0;0;{"setSchedule": {"newSchedule": "entries"}}
+heating.dhw.oneTimeCharge;Jednorazowe podgrzanie CWU;;dhw;31;0;0;
+heating.dhw.hygiene;Funkcja antylegionella;;dhw;40;0;0;
+heating.dhw.hygiene.trigger;Wyzwalanie funkcji antylegionella;;dhw;41;0;0;
+heating.dhw.temperature.hygiene;Temperatura antylegionella;;dhw;42;0;0;{"setTemperature": {"temperature": "value"}}
+heating.dhw.temperature.hysteresis;Histereza CWU;;dhw;43;0;0;
+heating.dhw.scaldProtection;Ochrona przed poparzeniem;;dhw;44;0;0;
+heating.dhw.pumps.circulation;Pompa cyrkulacyjna CWU;;dhw;50;0;0;
+heating.dhw.pumps.circulation.schedule;Harmonogram cyrkulacji CWU;;dhw;51;0;0;
+heating.gas.consumption.summary.heating;Zużycie gazu — ogrzewanie;Dziś / 7 dni / miesiąc / rok;statistics;20;0;1;
+heating.gas.consumption.summary.dhw;Zużycie gazu — CWU;;statistics;21;0;1;
+heating.gas.consumption.heating;Zużycie gazu — ogrzewanie (szeregi);;statistics;22;0;0;
+heating.gas.consumption.dhw;Zużycie gazu — CWU (szeregi);;statistics;23;0;0;
+heating.gas.consumption.total;Zużycie gazu — razem (szeregi);;statistics;24;0;0;
+heating.power.consumption.summary.heating;Zużycie prądu — ogrzewanie;;statistics;30;0;1;
+heating.power.consumption.summary.dhw;Zużycie prądu — CWU;;statistics;31;0;1;
+heating.power.consumption.heating;Zużycie prądu — ogrzewanie (szeregi);;statistics;32;0;0;
+heating.power.consumption.dhw;Zużycie prądu — CWU (szeregi);;statistics;33;0;0;
+heating.power.consumption.total;Zużycie prądu — razem (szeregi);;statistics;34;0;0;
+heating.heat.production.summary.heating;Ciepło wytworzone — ogrzewanie;;statistics;40;0;1;
+heating.heat.production.summary.dhw;Ciepło wytworzone — CWU;;statistics;41;0;1;
+heating.operating.programs.holiday;Program urlopowy;;other;10;0;0;
+heating.operating.programs.holidayAtHome;Urlop w domu;;other;11;0;0;
+heating.configuration.gasType;Rodzaj gazu;;other;20;0;0;
+heating.configuration.pressure.total;Konfiguracja ciśnienia;;other;21;0;0;
+heating.configuration.bufferCylinderSize;Pojemność bufora;;other;22;0;0;
+heating.configuration.dhwCylinderSize;Pojemność zasobnika CWU;;other;23;0;0;
+heating.configuration.centralHeatingCylinderSize;Pojemność zasobnika c.o.;;other;24;0;0;
+heating.configuration.houseHeatingLoad;Obciążenie cieplne budynku;;other;25;0;0;
+heating.configuration.houseLocation;Położenie budynku;;other;26;0;0;
+heating.configuration.houseOrientation;Orientacja budynku;;other;27;0;0;
+heating.configuration.internalPumps;Limity pomp wewnętrznych;;other;28;0;0;
+heating.configuration.dhwCylinderPump;Limity pompy zasobnika CWU;;other;29;0;0;
+heating.buffer.sensors.temperature.main;Temperatura bufora;;buffer;10;0;1;
+heating.bufferCylinder.sensors.temperature.main;Temperatura zasobnika buforowego;;buffer;11;0;0;
+heating.solar;Instalacja solarna;;solar;5;0;0;
+heating.solar.sensors.temperature.collector;Temperatura kolektora;;solar;10;0;1;
+heating.solar.sensors.temperature.dhw;Temperatura CWU (solar);;solar;11;0;0;
+heating.solar.power.production;Produkcja energii solarnej;;solar;20;0;1;
+heating.solar.summary.power.production;Produkcja solarna — podsumowanie;;solar;21;0;0;
+heating.solar.pumps.circuit;Pompa obiegu solarnego;;solar;30;0;0;
+heating.solar.rechargeSuppression;Blokada dogrzewania;;solar;31;0;0;
+heating.device.time;Czas urządzenia;;device;30;0;0;
+device.messages.status.raw;Komunikaty statusu;;messages;10;0;0;
+device.messages.info.raw;Komunikaty informacyjne;;messages;11;0;0;
+device.messages.service.raw;Komunikaty serwisowe;;messages;12;0;0;
+device.lock.malfunction;Blokada po usterce;;messages;13;0;0;
+device.serial;Numer seryjny;;device;10;0;0;
+device.etn;Numer ETN;;device;11;0;0;
+device.parameterIdentification.version;Wersja parametrów;;device;12;0;0;
+device.time.daylightSaving;Czas letni;;device;20;0;0;
+device.configuration.houseLocation;Wysokość n.p.m.;;device;21;0;0;
+device.zigbee.active;Zigbee aktywne;;device;30;0;0;
+device.zigbee.status;Status Zigbee;;device;31;0;0;
+device.setDefaultValues;Przywracanie ustawień fabrycznych;;device;40;0;0;
+device.timeseries.burner.stops;Zatrzymania palnika (statystyka);;statistics;50;0;0;
+device.timeseries.dhw.burner.stops;Zatrzymania palnika CWU (statystyka);;statistics;51;0;0;
+device.timeseries.ignitionTimeSteps;Czasy zapłonu (statystyka);;statistics;52;0;0;
+device.timeseries.monitoringIonization;Monitoring jonizacji (statystyka);;statistics;53;0;0;
+device.timeseries.water.pressure.peaks;Piki ciśnienia (statystyka);;statistics;54;0;0;
+tcu.wifi;Siła sygnału Wi‑Fi bramki;;device;50;0;0;
+tcu.features.wirelessRemoteController;Zdalny sterownik bezprzewodowy;;device;51;0;0;
+gateway.devices;Urządzenia bramki;;device;60;0;0;
+gateway.wifi;Wi‑Fi bramki;;device;61;0;0;

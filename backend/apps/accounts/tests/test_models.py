@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pytest
 from django.db import IntegrityError, transaction
+from django.test import override_settings
 from django.utils import timezone
 
 from apps.accounts.models import Invitation, Role, User, hash_token
@@ -16,6 +17,7 @@ def tenant() -> Tenant:
 
 
 @pytest.mark.django_db
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.Argon2PasswordHasher"])
 def test_passwords_are_hashed_with_argon2() -> None:
     user = User.objects.create_superuser("admin@example.com", PASSWORD)
     assert user.password.startswith("argon2")
