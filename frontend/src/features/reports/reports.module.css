@@ -1,0 +1,29 @@
+.sub { color: var(--fg-muted); font-size: var(--fs-sm); margin: 0; }
+.mono { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--fg-muted); }
+.error { color: var(--danger); font-size: var(--fs-sm); }
+.header { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.buttonLink { display: inline-flex; align-items: center; padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-md); border: 1px solid var(--border); color: var(--fg); text-decoration: none; font-size: var(--fs-sm); background: var(--bg-elevated); }
+.form { display: grid; gap: var(--sp-2); }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--sp-2); align-items: end; }
+.field { display: grid; gap: 4px; }
+.select { background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--sp-2); font: inherit; }
+.devices { border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--sp-2) var(--sp-3); display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+.check { display: flex; align-items: center; gap: var(--sp-1); cursor: pointer; }
+.actions { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
+.preview { display: grid; gap: var(--sp-3); margin: var(--sp-4) 0; }
+.previewHead { display: flex; align-items: baseline; gap: var(--sp-3); flex-wrap: wrap; }
+.h2 { margin: 0; font-size: var(--fs-lg); }
+.h3 { margin: var(--sp-2) 0; font-size: var(--fs-md); }
+.kpis { display: flex; gap: var(--sp-4); flex-wrap: wrap; margin-bottom: var(--sp-3); align-items: center; }
+.deviceLink { color: var(--accent); font-size: var(--fs-sm); }
+.block { margin: var(--sp-3) 0; }
+.stats { display: flex; flex-wrap: wrap; gap: var(--sp-3); font-size: var(--fs-sm); color: var(--fg-muted); margin-top: var(--sp-1); }
+.tableWrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.table th, .table td { text-align: left; padding: var(--sp-2); border-bottom: 1px solid var(--border); vertical-align: top; }
+.table th { color: var(--fg-muted); font-weight: 600; }
+.rowActions { display: flex; gap: var(--sp-2); align-items: center; white-space: nowrap; }
+.scheduleRow { display: flex; gap: var(--sp-3); align-items: center; padding: var(--sp-2) 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.scheduleRow:last-of-type { border-bottom: none; }
+.itemMain { flex: 1; min-width: 240px; display: grid; gap: 4px; }
+.itemTop { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }

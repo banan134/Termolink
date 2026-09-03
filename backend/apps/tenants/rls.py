@@ -78,4 +78,8 @@ RLS_TABLES: dict[str, bool] = {
     "device_status_history": False,
     "discovered_devices": False,
     "commands": False,
+    "alert_rules": False,
+    "alerts": True,
+    "report_schedules": False,
+    "report_files": False,
 }

@@ -33,6 +33,8 @@ INSTALLED_APPS = [
     "apps.providers",
     "apps.devices",
     "apps.control",
+    "apps.alerts",
+    "apps.reports",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

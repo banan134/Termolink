@@ -15,7 +15,9 @@ Parametry: `device_ids[]`, `from`, `to`, `resolution` (`raw`/`1h`/`1d`, auto), `
 ## Wyliczenia
 
 - Liczniki rosnące (godziny pracy, starty, energia skumulowana): raportujemy **przyrost** = `last(to) − first(from)`
-  z ochroną przed resetem licznika (jeśli spadek → sumuj odcinki rosnące).
+  z ochroną przed resetem licznika (jeśli spadek → sumuj odcinki rosnące; po resecie doliczamy wartość
+  po resecie, bo licznik startuje od zera). Przy rozdzielczości `1h`/`1d` przyrost liczony jest z wartości
+  `last` kolejnych kubełków — wzrost wewnątrz pierwszego kubełka nie jest widoczny (błąd ≤ 1 kubełek).
 - Dostępność = suma czasu w `online` / długość okresu; przerwy < 2 min pomijane w liście (ale liczone).
 - Średnie z agregatów: `avg` ważona `count` przy łączeniu godzin w dni.
 
@@ -23,17 +25,25 @@ Parametry: `device_ids[]`, `from`, `to`, `resolution` (`raw`/`1h`/`1d`, auto), `
 
 - **Podgląd** (`/reports/preview`): synchroniczny, z agregatów, limit 50 000 punktów; wykresy w UI.
 - **CSV**: UTF-8 z BOM, `;` jako separator (Excel PL), nagłówek: `czas;urządzenie;cecha;właściwość;wartość;jednostka`.
-- **PDF**: WeasyPrint z szablonu HTML (`reports/templates/report.html`), ten sam CSS co UI (print),
-  wykresy renderowane serwerowo jako SVG (matplotlib → SVG lub ECharts SSR; decyzja na etapie 5).
+- **PDF**: WeasyPrint z szablonu HTML (`apps/reports/templates/reports/report.html`), CSS print w
+  palecie UI; wykresy renderowane serwerowo jako **inline SVG własnym rendererem**
+  (`apps/reports/render.py::svg_chart`: linia średniej + pas min–max, siatka, znaczniki komend) —
+  decyzja etapu 5: bez matplotlib i bez headless Chrome (mniejszy obraz, brak zależności natywnych
+  poza pango dla WeasyPrint). Wymagane biblioteki systemowe: `libpango-1.0-0 libpangoft2-1.0-0
+  libharfbuzz0b fonts-dejavu-core` (Dockerfile i CI).
   Nagłówek: logo klienta **jeśli `tenants.logo_path` ustawione**, w przeciwnym razie tylko
   `report_header_text` lub nazwa klienta; stopka: „Termolink · Wodmiar”, data generowania, zakres.
 
 ## Harmonogram
 
 `report_schedules.cron` (np. `0 6 * * 1` tygodniowo, `0 6 1 * *` miesięcznie), strefa tenanta.
-Scheduler tworzy job `render_report`, wynik w `report_files`, e-mail z linkiem do pobrania
-(nie z załącznikiem — link wymaga logowania) — ewentualnie załącznik PDF jako opcja w harmonogramie.
-E-mail: SMTP operatora (env), szablony PL.
+Scheduler (tik workera, `apps/reports/jobs.py::schedule_reports`) tworzy job `render_report`, gdy
+kolejne odpalenie crona (liczone od `last_run_at`/`created_at` w strefie klienta) minęło; okres raportu
+= zamknięty poprzedni dzień/tydzień/miesiąc (`period`). Wynik w `report_files` (plik w
+`media/reports/{tenant}/{id}.{pdf|csv}`, wygasa po 30 dniach — `purge_expired`), e-mail z linkiem do
+pobrania (nie z załącznikiem — link wymaga logowania). „Uruchom teraz” = ten sam job z okresem
+harmonogramu. Podgląd (`/reports/preview`) i pliki mogą pobierać wszystkie role; zapis harmonogramów
+i usuwanie plików — tenant_admin i operator. Limit 50 000 punktów → 413 `too_many_points`.
 
 ## Alarmy
 
@@ -47,4 +57,14 @@ E-mail: SMTP operatora (env), szablony PL.
 
 Alarm otwarty → wpis w `alerts`, e-mail (jeśli włączony w regule), widoczny w UI z możliwością
 potwierdzenia; zamykany automatycznie, gdy warunek ustąpi. Deduplikacja: jeden otwarty alarm per
-(rule, device).
+(tenant, device, type, key) — `key` to np. cecha.właściwość (zakres), cecha+hash treści (komunikat),
+id konta/workera/komendy.
+
+Implementacja (`apps/alerts/services.py`, etap 5): `evaluate_all()` uruchamiane w tiku workera co
+60 s w kontekście systemowym; `device_offline` i `device_message` działają domyślnie dla każdego
+urządzenia (reguła może zmienić `minutes`, wyłączyć typ lub e-mail; reguła per urządzenie ma
+pierwszeństwo nad regułą dla całego klienta); `verify_mismatch` otwierany hookiem z `control` (e-mail
+do autora + `ALERT_EMAIL_OPERATOR`); `provider_account` i `worker_down` (żaden worker nie ma heartbeatu młodszego niż 2 min;
+wiersze starsze niż 1 h są usuwane, bo zabity proces nie sprząta po sobie; `tenant_id = NULL`)
+tylko do operatora. E-maile do aktywnych `tenant_admin` klienta.
+Alarmy bez `tenant_id` (worker) widzi tylko operator: `GET /admin/alerts`.

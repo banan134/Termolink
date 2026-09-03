@@ -100,6 +100,43 @@ ENDPOINTS: list[Endpoint] = [
     ),
     Endpoint("commands", "GET"),
     Endpoint("command", "GET"),
+    Endpoint("alerts", "GET"),
+    Endpoint("report-preview", "POST", body={"report_type": "changes"}),
+    Endpoint(
+        "report-preview-html", "POST", body={"report_type": "changes"}, tenant_roles_allowed=()
+    ),
+    Endpoint("report-jobs", "POST", body={"report_type": "changes", "format": "csv"}),
+    Endpoint("report-files", "GET"),
+    Endpoint("report-file", "GET"),
+    Endpoint("report-file", "DELETE", tenant_roles_allowed=(Role.TENANT_ADMIN,)),
+    Endpoint("report-file-download", "GET"),
+    Endpoint("report-schedules", "GET"),
+    Endpoint(
+        "report-schedules",
+        "POST",
+        body={"name": "x", "report_type": "changes", "device_ids": []},
+        tenant_roles_allowed=(Role.TENANT_ADMIN,),
+    ),
+    Endpoint(
+        "report-schedule",
+        "PATCH",
+        body={"enabled": False},
+        tenant_roles_allowed=(Role.TENANT_ADMIN,),
+    ),
+    Endpoint("report-schedule", "DELETE", tenant_roles_allowed=(Role.TENANT_ADMIN,)),
+    Endpoint("report-schedule", "POST", body={}, tenant_roles_allowed=(Role.TENANT_ADMIN,)),
+    Endpoint("alert", "PATCH", body={"acknowledged": True}),
+    Endpoint("alert-rules", "GET"),
+    Endpoint(
+        "alert-rules",
+        "POST",
+        body={"type": "device_message"},
+        tenant_roles_allowed=(Role.TENANT_ADMIN,),
+    ),
+    Endpoint(
+        "alert-rule", "PATCH", body={"enabled": False}, tenant_roles_allowed=(Role.TENANT_ADMIN,)
+    ),
+    Endpoint("alert-rule", "DELETE", tenant_roles_allowed=(Role.TENANT_ADMIN,)),
     Endpoint(
         "command-confirm",
         "POST",
@@ -161,6 +198,33 @@ def world() -> World:
             external_ids={"installationId": key, "gatewaySerial": "G", "deviceId": "0"},
             display_name=key,
         )
+        from pathlib import Path as _Path
+
+        from django.conf import settings as _settings
+        from django.utils import timezone as _tz
+
+        from apps.alerts.models import Alert, AlertRule
+        from apps.reports.models import ReportFile, ReportSchedule
+
+        rel = f"reports/{tenant.id}/isolation.csv"
+        target = _Path(_settings.MEDIA_ROOT) / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("czas;x" + chr(10), encoding="utf-8")
+        jobs[f"rfile_{key}"] = ReportFile.objects.create(
+            tenant=tenant,
+            report_type="changes",
+            format="csv",
+            status="done",
+            file_path=rel,
+            expires_at=_tz.now(),
+        )
+        jobs[f"rsched_{key}"] = ReportSchedule.objects.create(
+            tenant=tenant, name="s", report_type="changes", device_ids=[]
+        )
+        jobs[f"alert_{key}"] = Alert.objects.create(
+            tenant=tenant, type="device_offline", message="m"
+        )
+        jobs[f"rule_{key}"] = AlertRule.objects.create(tenant=tenant, type="device_message")
         jobs[f"command_{key}"] = Command.objects.create(
             tenant=tenant,
             device=jobs[f"device_{key}"],
@@ -199,6 +263,29 @@ def url_for(endpoint: Endpoint, world: World, tenant: Tenant) -> str:
         return reverse(endpoint.name, kwargs={"job_id": str(world.jobs[key].public_id)})
     if endpoint.name == "provider-authorize":
         return reverse(endpoint.name, kwargs={"tenant_id": str(tenant.id), "provider": "viessmann"})
+    if endpoint.name in ("report-file", "report-file-download"):
+        return reverse(
+            endpoint.name,
+            kwargs={"tenant_id": str(tenant.id), "file_id": str(world.jobs[f"rfile_{key}"].id)},
+        )
+    if endpoint.name == "report-schedule":
+        return reverse(
+            endpoint.name,
+            kwargs={
+                "tenant_id": str(tenant.id),
+                "schedule_id": str(world.jobs[f"rsched_{key}"].id),
+            },
+        )
+    if endpoint.name == "alert":
+        return reverse(
+            endpoint.name,
+            kwargs={"tenant_id": str(tenant.id), "alert_id": str(world.jobs[f"alert_{key}"].id)},
+        )
+    if endpoint.name == "alert-rule":
+        return reverse(
+            endpoint.name,
+            kwargs={"tenant_id": str(tenant.id), "rule_id": str(world.jobs[f"rule_{key}"].id)},
+        )
     if endpoint.name in ("command", "command-confirm"):
         return reverse(
             endpoint.name,
@@ -246,7 +333,7 @@ def test_tenant_a_cannot_reach_tenant_b(world: World, endpoint: Endpoint) -> Non
         assert foreign == 404, f"foreign tenant: {foreign}"
         # own tenant: reached the business logic (403/409/422 are its own verdicts, e.g. control
         # not allowed for an offline device, draft not owned by this user)
-        assert own in (200, 201, 202, 400, 403, 409, 422), f"own tenant: {own}"
+        assert own in (200, 201, 202, 204, 400, 403, 409, 422), f"own tenant: {own}"
     elif url_for(endpoint, world, world.a).startswith("/api/v1/admin/"):
         # the whole /admin group is off-limits for tenant roles (docs/04 matrix): 403 either way
         assert foreign == 403 and own == 403, f"foreign {foreign}, own {own}"

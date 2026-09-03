@@ -1,0 +1,106 @@
+{% load report_extras %}<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Termolink — {{ type_label }} — {{ data.tenant.name }}</title>
+<style>
+  @page { size: A4; margin: 18mm 14mm 20mm 14mm;
+    @bottom-left { content: "Termolink · Wodmiar"; font-size: 8pt; color: #6b7280; }
+    @bottom-center { content: "{{ from_local }} – {{ to_local }} · {{ resolution_label }}"; font-size: 8pt; color: #6b7280; }
+    @bottom-right { content: "wygenerowano {{ generated_local }} · strona " counter(page) " / " counter(pages); font-size: 8pt; color: #6b7280; } }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10pt; color: #111827; }
+  header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1d4ed8; padding-bottom: 6pt; margin-bottom: 12pt; }
+  header h1 { font-size: 16pt; margin: 0; color: #1d4ed8; }
+  header .sub { color: #6b7280; font-size: 9pt; }
+  header img { max-height: 40pt; max-width: 160pt; }
+  h2 { font-size: 13pt; margin: 14pt 0 4pt; page-break-after: avoid; }
+  h3 { font-size: 10.5pt; margin: 10pt 0 2pt; page-break-after: avoid; }
+  .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 8pt; color: #6b7280; }
+  .muted { color: #6b7280; }
+  table { border-collapse: collapse; width: 100%; font-size: 9pt; margin: 4pt 0 8pt; }
+  th, td { border-bottom: 1px solid #e5e7eb; padding: 3pt 4pt; text-align: left; vertical-align: top; }
+  th { background: #eff6ff; color: #1e3a8a; font-weight: 600; }
+  td.num, th.num { text-align: right; }
+  .chart { width: 100%; height: auto; page-break-inside: avoid; }
+  .chart .grid { stroke: #e5e7eb; stroke-width: 1; }
+  .chart .tick { font-size: 9px; fill: #6b7280; }
+  .chart .line { fill: none; stroke: #1d4ed8; stroke-width: 1.5; }
+  .chart .band { fill: #1d4ed8; fill-opacity: 0.12; stroke: none; }
+  .chart .marker { stroke: #b45309; stroke-width: 1; stroke-dasharray: 3 2; }
+  .block { page-break-inside: avoid; margin-bottom: 8pt; }
+  .kpi { display: inline-block; margin-right: 14pt; }
+  .kpi b { font-size: 12pt; }
+  .warn { color: #b91c1c; }
+  .note { background: #fef3c7; border-left: 3px solid #b45309; padding: 4pt 6pt; margin: 6pt 0; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>{{ type_label }}</h1>
+    <div class="sub">{% if data.tenant.header_text %}{{ data.tenant.header_text }}{% else %}{{ data.tenant.name }}{% endif %}
+      · {{ from_local }} – {{ to_local }} ({{ tz }}) · {{ resolution_label }}</div>
+  </div>
+  {% if logo_url %}<img src="{{ logo_url }}" alt="">{% else %}<div class="sub">Termolink</div>{% endif %}
+</header>
+
+{% for d in devices %}
+<h2>{{ d.name }}{% if d.model %} <span class="muted">· {{ d.model }}</span>{% endif %}{% if d.location %} <span class="muted">· {{ d.location }}</span>{% endif %}</h2>
+<div class="block">
+  <span class="kpi">Dostępność: <b>{{ d.availability_pct }} %</b></span>
+  {% if d.offline is not None %}<span class="kpi">Przerwy ≥ 2 min: <b>{{ d.offline|length }}</b></span>{% endif %}
+</div>
+
+{% if data.report_type == "energy" and not d.energy_available %}
+<div class="note">API producenta nie udostępnia cech zużycia/energii dla tego urządzenia — nic nie jest szacowane.</div>
+{% endif %}
+
+{% for s in d.charts %}
+<div class="block">
+  <h3>{{ s.label }}{% if s.property != "value" %} · {{ s.property }}{% endif %}{% if s.unit %} <span class="muted">[{{ s.unit|unit_pl }}]</span>{% endif %}</h3>
+  <div class="mono">{{ s.feature }}</div>
+  {{ s.svg|safe }}
+  {% if s.stats %}
+  <table>
+    <tr>
+      {% if s.counter %}<th class="num">Przyrost</th>{% endif %}
+      <th class="num">Min</th><th>kiedy</th><th class="num">Max</th><th>kiedy</th><th class="num">Średnia</th><th class="num">Ostatnia</th><th class="num">Próbki</th>
+    </tr>
+    <tr>
+      {% if s.counter %}<td class="num"><b>{{ s.stats.delta|num }}</b></td>{% endif %}
+      <td class="num">{{ s.stats.min.value|num }}</td><td>{{ s.stats.min.ts|local:tz }}</td>
+      <td class="num">{{ s.stats.max.value|num }}</td><td>{{ s.stats.max.ts|local:tz }}</td>
+      <td class="num">{{ s.stats.avg|num }}</td><td class="num">{{ s.stats.last|num }}</td><td class="num">{{ s.stats.count }}</td>
+    </tr>
+  </table>
+  {% else %}<div class="muted">brak danych w okresie</div>{% endif %}
+</div>
+{% endfor %}
+
+{% if d.offline %}
+<h3>Przerwy w łączności</h3>
+<table><tr><th>od</th><th>do</th><th class="num">czas</th></tr>
+{% for g in d.offline %}<tr><td>{{ g.from|local:tz }}</td><td>{{ g.to|local:tz }}</td><td class="num">{{ g.seconds|duration }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+
+{% if d.alerts is not None %}
+<h3>Alarmy</h3>
+{% if d.alerts %}
+<table><tr><th>otwarty</th><th>zamknięty</th><th>typ</th><th>treść</th></tr>
+{% for a in d.alerts %}<tr><td>{{ a.opened_at|local:tz }}</td><td>{% if a.closed_at %}{{ a.closed_at|local:tz }}{% else %}<span class="warn">otwarty</span>{% endif %}</td><td>{{ a.type }}</td><td>{{ a.message }}</td></tr>{% endfor %}
+</table>
+{% else %}<div class="muted">brak alarmów w okresie</div>{% endif %}
+{% endif %}
+
+{% if d.commands is not None %}
+<h3>Dziennik zmian</h3>
+{% if d.commands %}
+<table><tr><th>kiedy</th><th>cecha</th><th>komenda</th><th>przed</th><th>po</th><th>status</th><th>kto</th></tr>
+{% for c in d.commands %}<tr><td>{{ c.created_at|local:tz }}</td><td class="mono">{{ c.feature }}</td><td>{{ c.command }}</td><td>{{ c.value_before|kv }}</td><td>{{ c.value_after|kv }}</td><td>{{ c.status }}</td><td>{{ c.user|default:"—" }}{% if c.acted_as_operator %} (operator){% endif %}</td></tr>{% endfor %}
+</table>
+{% else %}<div class="muted">brak zmian w okresie</div>{% endif %}
+{% endif %}
+{% endfor %}
+</body>
+</html>

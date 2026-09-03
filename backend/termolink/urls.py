@@ -13,6 +13,8 @@ urlpatterns = [
     path("api/v1/", include("apps.providers.urls")),
     path("api/v1/", include("apps.devices.urls")),
     path("api/v1/", include("apps.control.urls")),
+    path("api/v1/", include("apps.alerts.urls")),
+    path("api/v1/", include("apps.reports.urls")),
     path("oauth/<str:provider>/callback", oauth_callback, name="oauth-callback"),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
