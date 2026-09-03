@@ -57,3 +57,23 @@ logs:
 
 worker:
 	$(COMPOSE) exec backend python manage.py run_worker --once
+
+# --- production (VPS) — ops/runbook.md ---
+PROD = docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml
+
+prod-up:           ## pull images (IMAGE_TAG from deploy/.env) and (re)start everything
+	$(PROD) pull && $(PROD) up -d
+
+prod-ps:
+	$(PROD) ps
+
+prod-logs:
+	$(PROD) logs -f --tail 200 backend worker caddy
+
+backup-now:        ## run one encrypted pg_dump immediately
+	$(PROD) exec backup backup.sh
+
+restore:           ## make restore FILE=/backups/termolink-....dump.age AGE_SECRET_KEY=AGE-SECRET-KEY-1...
+	$(PROD) stop backend worker caddy
+	$(PROD) run --rm -e AGE_SECRET_KEY="$(AGE_SECRET_KEY)" backup restore.sh "$(FILE)"
+	$(PROD) up -d

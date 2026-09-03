@@ -14,6 +14,7 @@ class AlertType(models.TextChoices):
     PROVIDER_ACCOUNT = "provider_account", "Konto producenta"
     VERIFY_MISMATCH = "verify_mismatch", "Komenda niepotwierdzona"
     WORKER_DOWN = "worker_down", "Brak workera"
+    BACKUP_FAILED = "backup_failed", "Backup nieudany"
 
 
 class Severity(models.TextChoices):
@@ -28,7 +29,12 @@ CONFIGURABLE_TYPES = (
     AlertType.VALUE_OUT_OF_RANGE,
     AlertType.DEVICE_MESSAGE,
 )
-OPERATOR_TYPES = (AlertType.PROVIDER_ACCOUNT, AlertType.VERIFY_MISMATCH, AlertType.WORKER_DOWN)
+OPERATOR_TYPES = (
+    AlertType.PROVIDER_ACCOUNT,
+    AlertType.VERIFY_MISMATCH,
+    AlertType.WORKER_DOWN,
+    AlertType.BACKUP_FAILED,
+)
 DEFAULT_OFFLINE_MINUTES = 30
 
 

@@ -1,0 +1,105 @@
+# Production overlay (VPS) — docs/11-deployment.md.
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Images come from GHCR (built by CI with tag = git SHA, plus `latest` on main). Set IMAGE_TAG in
+# .env to pin a release; `build:` stays as a fallback for a VPS without registry access.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
+services:
+  caddy:
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?set APP_DOMAIN in .env}
+      ADMIN_BASIC_USER: ${ADMIN_BASIC_USER:-admin}
+      ADMIN_BASIC_HASH: ${ADMIN_BASIC_HASH:?set ADMIN_BASIC_HASH (caddy hash-password) in .env}
+    logging: *logging
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_completed_successfully
+
+  # One-shot: migrations + app DB role, with the owner role. backend/worker wait for it.
+  migrate:
+    image: ${IMAGE_PREFIX:-ghcr.io/banan134/termolink}-backend:${IMAGE_TAG:-latest}
+    build:
+      context: ../backend
+      target: prod
+    env_file: .env
+    environment:
+      DJANGO_ENV: prod
+      DJANGO_DB_ROLE: admin
+    command: sh -c "python manage.py migrate --noinput && python manage.py ensure_app_db_role"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    logging: *logging
+
+  backend:
+    image: ${IMAGE_PREFIX:-ghcr.io/banan134/termolink}-backend:${IMAGE_TAG:-latest}
+    environment:
+      DJANGO_ENV: prod
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    logging: *logging
+
+  worker:
+    image: ${IMAGE_PREFIX:-ghcr.io/banan134/termolink}-backend:${IMAGE_TAG:-latest}
+    environment:
+      DJANGO_ENV: prod
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - media:/app/media
+      - backups:/backups:ro
+    logging: *logging
+
+  # One-shot: copies the built SPA into the volume Caddy serves.
+  frontend:
+    image: ${IMAGE_PREFIX:-ghcr.io/banan134/termolink}-frontend:${IMAGE_TAG:-latest}
+    build:
+      context: ../frontend
+      target: prod
+    volumes:
+      - frontend_dist:/out
+    restart: "no"
+    logging: *logging
+
+  db:
+    logging: *logging
+
+  # Nightly pg_dump -Fc → age → (optional) rclone; retention 30 d locally (docs/11 §Backup).
+  backup:
+    build:
+      context: ./backup
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PGHOST: db
+      BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-0 2 * * *}
+    volumes:
+      - backups:/backups
+      - ${RCLONE_CONFIG_FILE:-./rclone.conf.example}:/root/.config/rclone/rclone.conf:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *logging
+
+volumes:
+  backups: {}

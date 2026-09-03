@@ -4,11 +4,13 @@ from typing import Any
 
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
+from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import Invitation, Role, User
+from apps.core.exceptions import ApiError
 
 from . import services
 from .models import Tenant, TenantMembership, TenantType
@@ -35,6 +37,7 @@ class TenantSerializer(serializers.ModelSerializer[Tenant]):
             "type",
             "control_allowed",
             "report_header_text",
+            "logo_path",
             "timezone",
             "created_at",
             "archived_at",
@@ -42,7 +45,7 @@ class TenantSerializer(serializers.ModelSerializer[Tenant]):
             "devices_count",
             "online_count",
         ]
-        read_only_fields = ["id", "created_at", "archived_at"]
+        read_only_fields = ["id", "created_at", "archived_at", "logo_path"]
 
 
 class TenantWriteSerializer(serializers.Serializer[dict[str, Any]]):
@@ -128,6 +131,30 @@ class AdminTenantDetailView(APIView):
         tenant = services.update_tenant(
             request._request, actor=current_user(request), tenant=tenant, **data.validated_data
         )
+        return Response(TenantSerializer(_with_counts(tenant)).data)
+
+
+class AdminTenantLogoView(APIView):
+    """Logo used in report headers (docs/10). PNG/JPEG only — SVG could carry scripts (docs/08)."""
+
+    permission_classes = [IsOperator]
+    parser_classes = [MultiPartParser]
+
+    @extend_schema(request=None, responses=TenantSerializer)
+    def post(self, request: Request, tenant_id: str) -> Response:
+        tenant = get_tenant_or_404(request, tenant_id)
+        upload = request.FILES.get("file")
+        if upload is None:
+            raise ApiError("validation_error", "Brak pliku.", fields={"file": ["wymagany"]})
+        tenant = services.set_logo(
+            request._request, actor=current_user(request), tenant=tenant, upload=upload
+        )
+        return Response(TenantSerializer(_with_counts(tenant)).data)
+
+    @extend_schema(responses=TenantSerializer)
+    def delete(self, request: Request, tenant_id: str) -> Response:
+        tenant = get_tenant_or_404(request, tenant_id)
+        tenant = services.remove_logo(request._request, actor=current_user(request), tenant=tenant)
         return Response(TenantSerializer(_with_counts(tenant)).data)
 
 

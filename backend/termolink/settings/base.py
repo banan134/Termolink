@@ -147,6 +147,7 @@ REST_FRAMEWORK = {
         "login": "5/min",
         "password_reset": "3/hour",
         "user": "600/min",
+        "commands": "30/hour",
     },
 }
 SPECTACULAR_SETTINGS = {
@@ -197,6 +198,10 @@ PUBLIC_BASE_URL: str = env("PUBLIC_BASE_URL", default=OAUTH_REDIRECT_BASE)
 _raw_retention = env("RAW_RETENTION_DAYS", default="").strip()
 RAW_RETENTION_DAYS: int | None = int(_raw_retention) if _raw_retention else None
 ALERT_EMAIL_OPERATOR: str = env("ALERT_EMAIL_OPERATOR", default="")
+# Marker written by deploy/backup/backup.sh (mounted read-only in prod); health + alert.
+BACKUP_STATUS_FILE: str = env("BACKUP_STATUS_FILE", default="/backups/LAST_STATUS")
+# Tenant logo upload (reports): PNG/JPEG only, SVG is rejected (docs/08).
+LOGO_MAX_BYTES = 1024 * 1024
 SENSITIVE_COMMANDS: list[str] = env.list(
     "SENSITIVE_COMMANDS", default=["setMode", "setSchedule", "setCurve", "deactivate"]
 )

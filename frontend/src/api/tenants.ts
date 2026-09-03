@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api, ApiError } from "./client";
 import type { Role } from "./auth";
 
 export type TenantRow = {
@@ -7,6 +7,7 @@ export type TenantRow = {
   type: "company" | "person";
   control_allowed: boolean;
   report_header_text: string | null;
+  logo_path: string | null;
   timezone: string;
   created_at: string;
   archived_at: string | null;
@@ -40,6 +41,21 @@ export const tenantsApi = {
   create: (body: { name: string; type: "company" | "person" }) =>
     api<TenantRow>("/admin/tenants", { method: "POST", body }),
   get: (id: string) => api<TenantRow>(`/admin/tenants/${id}`),
+  uploadLogo: async (id: string, file: File): Promise<TenantRow> => {
+    const form = new FormData();
+    form.append("file", file);
+    const token = document.cookie.split("; ").find((c) => c.startsWith("csrftoken="))?.split("=")[1];
+    const r = await fetch(`/api/v1/admin/tenants/${id}/logo`, {
+      method: "POST",
+      credentials: "include",
+      headers: token ? { "X-CSRFToken": token } : {},
+      body: form,
+    });
+    const body = await r.json().catch(() => null);
+    if (!r.ok) throw new ApiError(r.status, body?.error ?? null);
+    return body as TenantRow;
+  },
+  removeLogo: (id: string) => api<TenantRow>(`/admin/tenants/${id}/logo`, { method: "DELETE" }),
   patch: (id: string, body: Partial<Pick<TenantRow, "name" | "control_allowed" | "report_header_text">>) =>
     api<TenantRow>(`/admin/tenants/${id}`, { method: "PATCH", body }),
   // operator and tenant_admin share the same shape; the route differs (docs/04)
