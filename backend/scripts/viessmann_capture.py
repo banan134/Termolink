@@ -3,8 +3,9 @@
 
 Runs on the host with plain Python 3.12 (stdlib only — no Docker, no Django). It:
   1. performs OAuth2 Authorization Code + PKCE with the Viessmann IdP (docs/01 §2),
-     listening for the redirect on http://localhost:8765/oauth/viessmann/callback
-     (register exactly this URI in the Viessmann developer portal for the capture run),
+     listening for the redirect on http://localhost:8765/oauth/viessmann/callback by default
+     (register exactly this URI in the Viessmann developer portal, or pass --redirect-uri with
+     any http://localhost:<port>/... URI that is already registered),
   2. records token lifetimes (`expires_in`, whether the refresh token rotates),
   3. downloads GET /equipment/installations?includeGateways=true and, for every device,
      GET …/features, and writes anonymised JSON fixtures to backend/tests/fixtures/viessmann/,
@@ -44,7 +45,7 @@ AUTH_URL = "https://iam.viessmann-climatesolutions.com/idp/v3/authorize"
 TOKEN_URL = "https://iam.viessmann-climatesolutions.com/idp/v3/token"  # noqa: S105 — endpoint, not a secret
 API_BASE = "https://api.viessmann-climatesolutions.com/iot/v1"
 SCOPE = "IoT User offline_access"
-REDIRECT_URI = "http://localhost:8765/oauth/viessmann/callback"
+DEFAULT_REDIRECT_URI = "http://localhost:8765/oauth/viessmann/callback"
 
 SERIAL_RE = re.compile(r"\b[0-9]{16}\b")  # Viessmann gateway/device serials are 16 digits
 
@@ -67,8 +68,15 @@ def anonymise(obj: object, mapping: dict[str, str]) -> object:
 
 
 class Capture:
-    def __init__(self, client_id: str, out: Path, label: str) -> None:
+    def __init__(self, client_id: str, out: Path, label: str, redirect_uri: str) -> None:
         self.client_id = client_id
+        self.redirect_uri = redirect_uri
+        parsed = urllib.parse.urlparse(redirect_uri)
+        if parsed.hostname not in ("localhost", "127.0.0.1") or not parsed.port:
+            sys.exit(
+                "--redirect-uri musi wskazywać http://localhost:<port>/... (skrypt nasłuchuje lokalnie)"
+            )
+        self.listen_port = parsed.port
         self.out = out
         self.label = label
         self.calls: list[dict[str, Any]] = []
@@ -95,7 +103,7 @@ class Capture:
                 {
                     "response_type": "code",
                     "client_id": self.client_id,
-                    "redirect_uri": REDIRECT_URI,
+                    "redirect_uri": self.redirect_uri,
                     "scope": SCOPE,
                     "code_challenge": challenge,
                     "code_challenge_method": "S256",
@@ -111,7 +119,7 @@ class Capture:
             {
                 "grant_type": "authorization_code",
                 "client_id": self.client_id,
-                "redirect_uri": REDIRECT_URI,
+                "redirect_uri": self.redirect_uri,
                 "code": code,
                 "code_verifier": verifier,
             }
@@ -170,7 +178,7 @@ class Capture:
             def log_message(self, *args: object) -> None:  # silence
                 pass
 
-        with http.server.HTTPServer(("localhost", 8765), Handler) as server:
+        with http.server.HTTPServer(("localhost", self.listen_port), Handler) as server:
             while "code" not in result:
                 server.handle_request()
         if result.get("state") != expected_state:
@@ -334,9 +342,14 @@ def main() -> None:
     parser.add_argument("--label", default="client-1")
     parser.add_argument("--probe-limit", type=int, default=0)
     parser.add_argument("--skip-refresh", action="store_true")
+    parser.add_argument(
+        "--redirect-uri",
+        default=DEFAULT_REDIRECT_URI,
+        help="dokładnie taki URI, jaki jest wpisany w portalu Viessmann (http://localhost:<port>/...)",
+    )
     args = parser.parse_args()
 
-    cap = Capture(args.client_id, Path(args.out), args.label)
+    cap = Capture(args.client_id, Path(args.out), args.label, args.redirect_uri)
     cap.authorize()
     cap.capture_all(args.probe_limit)
     cap.probe_invalid_token()
