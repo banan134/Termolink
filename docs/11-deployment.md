@@ -10,7 +10,9 @@
 
 ## Pliki Compose
 
-Jeden `docker-compose.yml` (baza) + nakładki: `docker-compose.dev.yml` (komputer programisty, `docs/15-local-development.md`) i `docker-compose.prod.yml` (VPS). Produkcja: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`.
+Jeden `docker-compose.yml` (baza) + nakładki: `docker-compose.dev.yml` (komputer programisty, `docs/15-local-development.md`) i `docker-compose.prod.yml` (VPS). Produkcja: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d` (skróty `make prod-up`, `make prod-ps`, `make prod-logs`, `make backup-now`, `make restore`).
+
+**Stan po etapie 6** — nakładka prod dodaje: usługę jednorazową `migrate` (`migrate` + `ensure_app_db_role` rolą właściciela; `backend`/`worker` startują po jej sukcesie), usługę jednorazową `frontend` (kopiuje zbudowaną SPA do wolumenu Caddy), obrazy z GHCR (`IMAGE_PREFIX`/`IMAGE_TAG`, tag = git SHA publikowany przez CI po merge do `main`; `build:` jako zapas), `read_only` + `no-new-privileges` także dla workera, limity logów, usługę `backup` (`deploy/backup/`: `pg_dump -Fc` → `age` → `/backups` → opcjonalnie `rclone`; znacznik `/backups/LAST_STATUS` czytany przez `/api/v1/health` i alarm `backup_failed`). Procedury: `ops/runbook.md`.
 
 ## `deploy/docker-compose.yml` (szkic — baza)
 
@@ -73,6 +75,12 @@ app.termolink.example {
 }
 ```
 
+Finalny `deploy/Caddyfile` (etap 6): domena i basic-auth z env (`APP_DOMAIN`, `ADMIN_BASIC_USER`,
+`ADMIN_BASIC_HASH`), `Content-Security-Policy` dla SPA (`script-src 'self'`, `style-src 'self'
+'unsafe-inline'` — docs/08), osobna, łagodniejsza CSP i basic-auth dla `/admin-django/*` i
+`/api/schema/*`, `immutable` cache dla `/assets/*`, logi JSON. Rate limiting egzekwowany w DRF
+(login 5/min/IP, reset 3/h/IP, komendy 30/h/użytkownika, API 600/min/użytkownika).
+
 ## `.env.example`
 
 ```
@@ -103,8 +111,11 @@ SENSITIVE_COMMANDS=setMode,setSchedule,setCurve,deactivate
   „expand/contract”, żeby rollback kodu nie wymagał rollbacku DB.
 - **Backup**: co noc 02:00, `pg_dump -Fc`, szyfrowanie `age`, `rclone` do zewnętrznego magazynu;
   retencja 30 d + 12 m; test odtworzenia co kwartał na staging (udokumentowany w `ops/restore-log.md`).
-- **Monitoring**: `/admin/system/health` + zewnętrzny uptime-check HTTPS; e-mail do operatora
-  przy: brak heartbeatu workera, backup nieudany, dysk < 15 %, > 50 błędów API/h.
+- **Monitoring**: `GET /api/v1/health` → `{status, db, worker, backup}`; **503**, gdy baza nie
+  odpowiada, żaden worker nie zgłosił się od 2 min albo ostatni backup zgłosił błąd — pod to
+  podpina się zewnętrzny uptime-check HTTPS. E-mail do operatora (`ALERT_EMAIL_OPERATOR`) przy:
+  `worker_down`, `backup_failed` (błąd lub starszy niż 26 h), `provider_account`, `verify_mismatch`.
+  Dysk < 15 % i > 50 błędów API/h — ręcznie wg `ops/runbook.md` (kandydat na alarm po v1).
 - **Aktualizacje**: `unattended-upgrades` OS; obrazy aplikacji aktualizowane przez CI co najmniej
   raz w miesiącu (bezpieczeństwo zależności).
 

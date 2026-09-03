@@ -5,6 +5,7 @@ from .api import (
     AdminTenantDetailView,
     AdminTenantInvitationsView,
     AdminTenantListView,
+    AdminTenantLogoView,
     AdminTenantUsersView,
     TechnicianMembershipDetailView,
     TechnicianMembershipsView,
@@ -13,6 +14,11 @@ from .api import (
 )
 
 urlpatterns = [
+    path(
+        "admin/tenants/<str:tenant_id>/logo",
+        AdminTenantLogoView.as_view(),
+        name="admin-tenant-logo",
+    ),
     path("admin/tenants", AdminTenantListView.as_view(), name="admin-tenants"),
     path("admin/tenants/<str:tenant_id>", AdminTenantDetailView.as_view(), name="admin-tenant"),
     path(

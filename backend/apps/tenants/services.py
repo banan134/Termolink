@@ -130,3 +130,74 @@ def remove_membership(
         tenant=tenant,
         details={"technician": technician.email},
     )
+
+
+# ---------- logo (report header) ----------
+LOGO_SIGNATURES = {b"\x89PNG\r\n\x1a\n": "png", b"\xff\xd8\xff": "jpg"}
+
+
+def _logo_kind(head: bytes) -> str | None:
+    for signature, ext in LOGO_SIGNATURES.items():
+        if head.startswith(signature):
+            return ext
+    return None
+
+
+def set_logo(request: Any, *, actor: Any, tenant: Tenant, upload: Any) -> Tenant:
+    """PNG/JPEG ≤ 1 MB, verified by magic bytes (not by extension/Content-Type). SVG rejected."""
+    from pathlib import Path
+
+    from django.conf import settings
+
+    from apps.core.exceptions import ApiError
+
+    if upload.size > settings.LOGO_MAX_BYTES:
+        raise ApiError(
+            "validation_error", "Plik za duży (max 1 MB).", fields={"file": ["max 1 MB"]}
+        )
+    head = upload.read(16)
+    upload.seek(0)
+    kind = _logo_kind(head)
+    if kind is None:
+        raise ApiError(
+            "validation_error",
+            "Dozwolone tylko PNG lub JPEG.",
+            fields={"file": ["PNG lub JPEG (SVG niedozwolone)"]},
+        )
+    rel = f"logos/{tenant.id}.{kind}"
+    target = Path(settings.MEDIA_ROOT) / rel
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("wb") as fh:
+        for chunk in upload.chunks():
+            fh.write(chunk)
+    for other in ("png", "jpg"):
+        if other != kind:
+            stale = Path(settings.MEDIA_ROOT) / f"logos/{tenant.id}.{other}"
+            if stale.exists():
+                stale.unlink()
+    tenant.logo_path = rel
+    tenant.save(update_fields=["logo_path", "updated_at"])
+    audit(
+        "tenant.logo.set",
+        request=request,
+        user=actor,
+        tenant=tenant,
+        target=tenant,
+        details={"path": rel},
+    )
+    return tenant
+
+
+def remove_logo(request: Any, *, actor: Any, tenant: Tenant) -> Tenant:
+    from pathlib import Path
+
+    from django.conf import settings
+
+    if tenant.logo_path:
+        path = Path(settings.MEDIA_ROOT) / tenant.logo_path
+        if path.exists():
+            path.unlink()
+    tenant.logo_path = None
+    tenant.save(update_fields=["logo_path", "updated_at"])
+    audit("tenant.logo.removed", request=request, user=actor, tenant=tenant, target=tenant)
+    return tenant

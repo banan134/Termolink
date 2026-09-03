@@ -58,6 +58,18 @@
   `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
 - Walidacja wejścia: DRF serializers + `pydantic` dla payloadów adapterów. Brak surowego SQL z konkatenacją.
 - Rate limiting (Caddy + DRF throttling): login 5/min/IP, reset 3/h/IP, `/commands` 30/h/user, API 600/min/user.
+  Stan po etapie 6: wszystkie cztery limity w DRF (`DEFAULT_THROTTLE_RATES`); Caddy bez pluginu
+  rate-limit (do rozważenia przy wdrożeniu, docs/14).
+- CSP (etap 6, nagłówek z Caddy, nie `django-csp`): `default-src 'self'; script-src 'self';
+  style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src
+  'self'; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';
+  object-src 'none'`. `'unsafe-inline'` tylko dla stylów (ECharts ustawia atrybuty `style`);
+  skrypty wyłącznie z własnych plików Vite. Panel Django (`/admin-django/*`, `/api/schema/*`)
+  ma osobną CSP z `script-src 'unsafe-inline'` i jest za basic-auth.
+- Logo klienta (nagłówek raportów): upload tylko przez operatora, **PNG/JPEG ≤ 1 MB** rozpoznawane
+  po sygnaturze pliku (nie po rozszerzeniu), **SVG odrzucane** — zamiast sanitizacji SVG (docs/13
+  etap 6) przyjęto brak wsparcia dla SVG; plik zapisany poza katalogiem serwowanym statycznie,
+  używany wyłącznie przez WeasyPrint.
 - Upload logo: tylko PNG/SVG, ≤ 1 MB, SVG sanitizowany (usunięcie skryptów) lub konwertowany do PNG.
 - Zależności: Dependabot/Renovate; `pip-audit`, `npm audit` w CI; obrazy z pinowanymi digestami.
 - Logi strukturalne (JSON) bez sekretów, bez treści haseł/tokenów; `request_id` w każdym wpisie.

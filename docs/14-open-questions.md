@@ -1,5 +1,15 @@
 # 14 — Pytania otwarte i rzeczy do weryfikacji
 
+## Z implementacji (etap 6)
+
+- **CSP `style-src 'unsafe-inline'`** — ECharts i React ustawiają style inline; sprawdzić na staging,
+  czy da się przejść na `style-src 'self'` (ECharts obsługuje `useDirtyRect`/canvas bez stylów
+  inline?), ewentualnie nonce dla wstrzykiwanych styli.
+- **Rate limiting w Caddy** (plugin `caddy-ratelimit`) — dziś tylko DRF; przy ataku na `/login`
+  DRF i tak wykonuje kod Pythona. Obraz Caddy z pluginem = własny build (`xcaddy`).
+- **Alarm `worker_down`** — patrz etap 5; `GET /api/v1/health` zwraca już `worker:false` (503),
+  więc zewnętrzny uptime-check pokrywa przypadek „padły wszystkie workery”.
+
 ## Z implementacji (etap 5)
 
 - **Alarm `worker_down` ewaluuje sam worker** — gdy padną wszystkie workery, nikt go nie otworzy.

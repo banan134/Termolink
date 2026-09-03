@@ -1,6 +1,7 @@
-# Production Caddyfile (docs/11-deployment.md) — draft, finalised with the prod overlay in stage 6.
-# Replace the domain with the real one (docs/14 B1).
-app.termolink.example {
+# Production Caddyfile (docs/11-deployment.md, docs/08-security.md §Nagłówki).
+# APP_DOMAIN, ADMIN_BASIC_USER and ADMIN_BASIC_HASH come from the environment (deploy/.env via
+# docker-compose.prod.yml). Generate the hash with: docker run --rm caddy:2 caddy hash-password
+{$APP_DOMAIN} {
 	encode zstd gzip
 
 	header {
@@ -9,16 +10,39 @@ app.termolink.example {
 		Referrer-Policy strict-origin-when-cross-origin
 		X-Frame-Options DENY
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		# SPA: no inline scripts (Vite emits external chunks). style-src keeps 'unsafe-inline' for
+		# ECharts/inline style attributes — docs/14 tracks removing it. blob:/data: images = PNG export.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		-Server
 	}
 
-	@backend path /api/* /oauth/* /admin-django/* /static/*
-	handle @backend {
+	# Django admin + API docs: only behind an extra basic-auth (docs/11); Django needs inline JS there.
+	@admin path /admin-django/* /api/schema/*
+	handle @admin {
+		basic_auth {
+			{$ADMIN_BASIC_USER} {$ADMIN_BASIC_HASH}
+		}
+		header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'"
 		reverse_proxy backend:8000
 	}
 
+	@backend path /api/* /oauth/* /static/*
+	handle @backend {
+		reverse_proxy backend:8000 {
+			header_up X-Forwarded-Proto https
+		}
+	}
+
+	# Generated reports are served by Django (auth + tenant check), never as static files.
 	handle {
 		root * /srv/frontend
 		try_files {path} /index.html
+		header /assets/* Cache-Control "public, max-age=31536000, immutable"
 		file_server
+	}
+
+	log {
+		output stdout
+		format json
 	}
 }

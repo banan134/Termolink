@@ -49,6 +49,7 @@ ENDPOINTS: list[Endpoint] = [
     Endpoint("admin-tenant", "GET", tenant_roles_allowed=()),
     Endpoint("admin-tenant", "PATCH", body={"name": "x"}, tenant_roles_allowed=()),
     Endpoint("admin-tenant-users", "GET", tenant_roles_allowed=()),
+    Endpoint("admin-tenant-logo", "DELETE", tenant_roles_allowed=()),
     Endpoint(
         "admin-tenant-invitations",
         "POST",

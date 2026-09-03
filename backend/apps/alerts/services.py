@@ -25,6 +25,7 @@ from apps.tenants.models import Tenant
 from . import emails
 from .models import (
     DEFAULT_OFFLINE_MINUTES,
+    OPERATOR_TYPES,
     Alert,
     AlertRule,
     AlertType,
@@ -34,6 +35,7 @@ from .models import (
 log = logging.getLogger("termolink.alerts")
 WORKER_DOWN_AFTER = timedelta(minutes=2)
 STALE_HEARTBEAT_PRUNE = timedelta(hours=1)
+BACKUP_MAX_AGE = timedelta(hours=26)
 EVALUATE_EVERY = timedelta(seconds=60)
 _last_run: datetime | None = None
 
@@ -94,13 +96,13 @@ def acknowledge(alert: Alert, user: User) -> Alert:
 
 def _recipients(alert: Alert, extra: list[str]) -> list[str]:
     out: list[str] = []
-    if alert.tenant_id and alert.type not in (AlertType.PROVIDER_ACCOUNT, AlertType.WORKER_DOWN):
+    if alert.tenant_id and alert.type not in OPERATOR_TYPES:
         out += list(
             User.objects.filter(
                 tenant_id=alert.tenant_id, role=Role.TENANT_ADMIN, is_active=True
             ).values_list("email", flat=True)
         )
-    if alert.type in (AlertType.PROVIDER_ACCOUNT, AlertType.VERIFY_MISMATCH, AlertType.WORKER_DOWN):
+    if alert.type in OPERATOR_TYPES:
         if settings.ALERT_EMAIL_OPERATOR:
             out.append(settings.ALERT_EMAIL_OPERATOR)
     out += extra
@@ -135,6 +137,7 @@ def evaluate_all(now: datetime | None = None, *, force: bool = False) -> dict[st
         "messages": evaluate_messages(),
         "accounts": evaluate_provider_accounts(),
         "workers": evaluate_workers(now),
+        "backup": evaluate_backup(now),
     }
     return stats
 
@@ -354,6 +357,33 @@ def evaluate_workers(now: datetime) -> int:
         key="all",
         severity=Severity.CRITICAL,
         message=f"Żaden worker nie zgłasza się od {last:%Y-%m-%d %H:%M}",
+    )
+    return int(created)
+
+
+def evaluate_backup(now: datetime) -> int:
+    """deploy/backup/backup.sh writes `ok <iso> …` or `failed <iso> …`; stale (> 26 h) = failed."""
+    from apps.core.api import backup_status
+
+    status = backup_status()
+    if status is None:  # no backup service mounted (dev) → nothing to say
+        return 0
+    words = status.split()
+    stale = False
+    if len(words) >= 2:
+        try:
+            stale = now - datetime.fromisoformat(words[1].replace("Z", "+00:00")) > BACKUP_MAX_AGE
+        except ValueError:
+            stale = True
+    if words and words[0] == "ok" and not stale:
+        close_alerts(type=AlertType.BACKUP_FAILED, tenant=None)
+        return 0
+    _, created = open_alert(
+        type=AlertType.BACKUP_FAILED,
+        tenant=None,
+        key="backup",
+        severity=Severity.CRITICAL,
+        message=f"Backup bazy: {status[:120]}" + (" (przeterminowany)" if stale else ""),
     )
     return int(created)
 

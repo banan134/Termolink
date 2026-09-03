@@ -88,10 +88,11 @@ alarm offline przychodzi e-mailem po 30 min.
 
 ## Etap 6 — Utwardzenie i wdrożenie produkcyjne
 
-- [ ] CSP bez `unsafe-inline`, rate limiting, nagłówki, sanitizacja SVG.
-- [ ] Backup + test odtworzenia; monitoring; runbook operatora (`ops/runbook.md`: reauth klienta, rotacja klucza, przywracanie, dodanie serwisanta).
+- [x] CSP (skrypty bez `unsafe-inline`; style z `unsafe-inline` — docs/14), rate limiting w DRF (login/reset/komendy/API), nagłówki w Caddy, logo klienta tylko PNG/JPEG (SVG odrzucane zamiast sanitizacji).
+- [x] Backup (`deploy/backup`: pg_dump → age → rclone, retencja, znacznik statusu), `restore.sh`, monitoring (`/api/v1/health` z workerem i backupem, alarm `backup_failed`), runbook operatora (`ops/runbook.md`), `ops/restore-log.md`; nakładka `docker-compose.prod.yml` z usługami `migrate`/`frontend`/`backup`, obrazy w GHCR z CI. [ ] Test odtworzenia na staging (wpis w `ops/restore-log.md`).
 - [ ] Test penetracyjny (zewnętrzny) i usunięcie ustaleń krytycznych/wysokich.
 - [ ] Weryfikacja palety z księgą znaku Wodmiar (jeśli istnieje); audyt kontrastu.
+- [ ] Rotacja `TOKEN_MASTER_KEY` bez ponownej autoryzacji (`TOKEN_MASTER_KEY_PREVIOUS`, docs/08) — obecnie rotacja = reauth wszystkich kont (runbook §4).
 - [ ] Wdrożenie pierwszego klienta (6 urządzeń) w trybie `read`; po 2 tygodniach obserwacji —
       włączenie `control` na wybranych urządzeniach.
 

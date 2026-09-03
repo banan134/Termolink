@@ -63,3 +63,6 @@
   font-size: var(--fs-sm);
   color: var(--text-muted);
 }
+
+.fileButton { display: inline-flex; align-items: center; padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-elevated); cursor: pointer; font-size: var(--fs-sm); }
+.error { color: var(--danger); font-size: var(--fs-sm); }
