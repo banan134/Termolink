@@ -74,7 +74,7 @@ class Capture:
         parsed = urllib.parse.urlparse(redirect_uri)
         if parsed.hostname not in ("localhost", "127.0.0.1") or not parsed.port:
             sys.exit(
-                "--redirect-uri musi wskazywać http://localhost:<port>/... (skrypt nasłuchuje lokalnie)"
+                "--redirect-uri musi wskazywać http://localhost:<port>/... (nasłuch lokalny)"
             )
         self.listen_port = parsed.port
         self.out = out
