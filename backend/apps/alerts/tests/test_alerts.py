@@ -174,6 +174,14 @@ def test_provider_account_and_worker_alerts_go_to_operator(world: dict[str, Any]
     )
     assert services.evaluate_workers(timezone.now()) == 1
     assert Alert.objects.get(type=AlertType.WORKER_DOWN).tenant_id is None
+    WorkerHeartbeat.objects.create(worker_id="w2", last_beat_at=timezone.now())  # a live worker
+    assert services.evaluate_workers(timezone.now()) == 0
+    assert Alert.objects.get(type=AlertType.WORKER_DOWN).closed_at is not None
+    WorkerHeartbeat.objects.filter(worker_id="w1").update(
+        last_beat_at=timezone.now() - timedelta(hours=2)
+    )
+    services.evaluate_workers(timezone.now())
+    assert not WorkerHeartbeat.objects.filter(worker_id="w1").exists()  # pruned
     account.set_status(AccountStatus.ACTIVE)
     account.save()
     services.evaluate_provider_accounts()

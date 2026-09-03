@@ -33,6 +33,7 @@ from .models import (
 
 log = logging.getLogger("termolink.alerts")
 WORKER_DOWN_AFTER = timedelta(minutes=2)
+STALE_HEARTBEAT_PRUNE = timedelta(hours=1)
 EVALUATE_EVERY = timedelta(seconds=60)
 _last_run: datetime | None = None
 
@@ -335,23 +336,26 @@ def evaluate_provider_accounts() -> int:
 
 
 def evaluate_workers(now: datetime) -> int:
-    """No heartbeat for > 2 min → operator alert (tenant NULL)."""
-    opened = 0
-    for hb in WorkerHeartbeat.objects.all():
-        if now - hb.last_beat_at > WORKER_DOWN_AFTER:
-            _, created = open_alert(
-                type=AlertType.WORKER_DOWN,
-                tenant=None,
-                key=hb.worker_id,
-                severity=Severity.CRITICAL,
-                message=(
-                    f"Worker {hb.worker_id} nie zgłasza się od {hb.last_beat_at:%Y-%m-%d %H:%M}"
-                ),
-            )
-            opened += int(created)
-        else:
-            close_alerts(type=AlertType.WORKER_DOWN, tenant=None, key=hb.worker_id)
-    return opened
+    """No worker heartbeat for > 2 min → one operator alert (tenant NULL); stale rows pruned.
+
+    Restarted workers leave rows behind (a killed process never gets to the clean shutdown), so
+    the condition is "no fresh heartbeat at all", not "this row is stale".
+    """
+    rows = list(WorkerHeartbeat.objects.all())
+    WorkerHeartbeat.objects.filter(last_beat_at__lt=now - STALE_HEARTBEAT_PRUNE).delete()
+    fresh = [hb for hb in rows if now - hb.last_beat_at <= WORKER_DOWN_AFTER]
+    if fresh or not rows:
+        close_alerts(type=AlertType.WORKER_DOWN, tenant=None)
+        return 0
+    last = max(hb.last_beat_at for hb in rows)
+    _, created = open_alert(
+        type=AlertType.WORKER_DOWN,
+        tenant=None,
+        key="all",
+        severity=Severity.CRITICAL,
+        message=f"Żaden worker nie zgłasza się od {last:%Y-%m-%d %H:%M}",
+    )
+    return int(created)
 
 
 # --- hooks ---------------------------------------------------------------------------------------

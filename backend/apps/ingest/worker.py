@@ -57,6 +57,13 @@ class Worker:
                 opened = evaluate_all()
             if any(opened.values()):
                 log.info("alerts opened: %s", opened)
+            with transaction.atomic():
+                set_context(SYSTEM)
+                from apps.reports.jobs import purge_expired, schedule_reports
+
+                if schedule_reports():
+                    log.info("report schedule(s) fired")
+                purge_expired()
         except Exception:  # noqa: BLE001 — never let the scheduler kill the worker loop
             log.exception("scheduler tick failed")
         ran = 0

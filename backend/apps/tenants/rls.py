@@ -80,4 +80,6 @@ RLS_TABLES: dict[str, bool] = {
     "commands": False,
     "alert_rules": False,
     "alerts": True,
+    "report_schedules": False,
+    "report_files": False,
 }

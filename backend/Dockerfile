@@ -10,6 +10,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libpq5 \
+       libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libffi8 libjpeg62-turbo libopenjp2-7 \
+       fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 COPY pyproject.toml ./
 RUN pip install --upgrade pip \

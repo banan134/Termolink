@@ -27,6 +27,9 @@ function Nav({ me }: { me: Me }) {
       )}
       {me.tenant && (
         <>
+          <NavLink to={`/t/${me.tenant.id}/reports`} className={link}>
+            {t.nav.reports}
+          </NavLink>
           <NavLink to={`/t/${me.tenant.id}/alerts`} className={link}>
             {t.nav.alerts}
           </NavLink>
