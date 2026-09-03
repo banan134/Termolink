@@ -43,7 +43,8 @@ from typing import Any
 
 AUTH_URL = "https://iam.viessmann-climatesolutions.com/idp/v3/authorize"
 TOKEN_URL = "https://iam.viessmann-climatesolutions.com/idp/v3/token"  # noqa: S105 — endpoint, not a secret
-API_BASE = "https://api.viessmann-climatesolutions.com/iot/v1"
+API_HOST = "https://api.viessmann-climatesolutions.com"
+API_BASE = f"{API_HOST}/iot/v2"  # /iot/v1 answered 410 GONE on 2026-09-03 (sunset 2025-12-15)
 SCOPE = "IoT User offline_access"
 DEFAULT_REDIRECT_URI = "http://localhost:8765/oauth/viessmann/callback"
 
@@ -184,7 +185,7 @@ class Capture:
         return result["code"]
 
     # ---------------- API ----------------
-    def get(self, path: str, name: str) -> tuple[int, Any]:
+    def get(self, path: str, name: str, *, _hops: int = 0) -> tuple[int, Any]:
         url = path if path.startswith("http") else API_BASE + path
         started = time.time()
         status, headers, payload = self._request(
@@ -192,9 +193,26 @@ class Capture:
         )
         self._log(name, url, status, headers, started)
         try:
-            return status, json.loads(payload)
+            body = json.loads(payload)
         except json.JSONDecodeError:
             return status, {"_raw": payload[:2000]}
+        # 410 GONE with a documented replacement (docs/01 §8: the API moves) → follow it once,
+        # keep the evidence in the report so docs/01 can be corrected.
+        replacement = (
+            (body.get("extendedPayload") or {}).get("replacement")
+            if isinstance(body, dict)
+            else None
+        )
+        if status == 410 and replacement and _hops < 2:
+            new_path = replacement.split(" ", 1)[-1]
+            self.report.setdefault("deprecations", []).append(
+                {"from": url, "to": new_path, "body": body}
+            )
+            print(f"  ! {url} → 410 GONE, following replacement {new_path}")
+            return self.get(
+                API_HOST + new_path if new_path.startswith("/") else new_path, name, _hops=_hops + 1
+            )
+        return status, body
 
     def capture_all(self, probe_limit: int) -> None:
         status, installations = self.get(
