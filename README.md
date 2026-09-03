@@ -38,7 +38,7 @@ auth z 2FA (TOTP + kody zapasowe), reset hasła, zaproszenia, audit log append-o
 z workerem, `seed_demo`, frontend (logowanie z 2FA, `/account`, klienci i użytkownicy dla operatora,
 użytkownicy dla administratora klienta), parametryczne testy izolacji, CI.
 
-**Etap 2 (adapter Viessmann i odczyt) zaimplementowany bez danych z etapu 0**: interfejs adaptera, OAuth PKCE,
+**Etap 2 (adapter Viessmann i odczyt) zaimplementowany i zweryfikowany na fixtures z etapu 0; etap 3 (słownik etykiet, dashboardy, eksplorator wykresów na ECharts) zaimplementowany**: interfejs adaptera, OAuth PKCE,
 konta producenta z budżetem API, scheduler/poller/ingest na hypertable Timescale, API i UI urządzeń. Do domknięcia
 etapu 2 potrzebne są zrzuty z prawdziwego API (`docs/16-etap-0-instrukcja.md`) — dopiero na nich uruchomią się
 testy parsera i weryfikacja z urządzeniem.

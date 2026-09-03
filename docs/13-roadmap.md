@@ -56,13 +56,14 @@ status offline w ≤ 2 cykle, budżet nigdy nie przekroczony (test 24 h na stagi
 
 ## Etap 3 — Dashboardy
 
-- [ ] Słownik `feature_labels` + panel operatora do edycji + import startowy (CSV w repo, uzupełniany z fixtures).
-- [ ] Dashboard klienta (karty, highlights, budżet, zdarzenia), karta urządzenia (Przegląd/Wykresy/Wszystkie cechy/Komunikaty), widgety per typ, tabela „pozostałe”.
-- [ ] Wykresy z auto-rozdzielczością; sparkline 24 h; `ChartExplorer` z drill-down, zakresami Dzień…Rok + własny, zoomem, porównaniem serii/okresów, statystykami, eksportem CSV, pobieraniem PNG z każdego wykresu (białe tło, stopka z zakresem i klientem) i stanem w URL (`09-frontend.md` §Wykresy); endpointy `history` rozszerzone o `gaps/stats/markers`, `history/multi`, `history.csv`.
-- [ ] Ustawienia urządzenia (nazwa/lokalizacja/opis dla tenant_admin).
-- [ ] Wydajność: skeletony, code-splitting, pomiar Web Vitals.
+- [x] Słownik `feature_labels` + panel operatora do edycji (`/admin/labels`) + import startowy (CSV w repo, uzupełniony z fixtures).
+- [x] Dashboard klienta (karty, highlights ze słownika), karta urządzenia (Przegląd/Wykresy/Wszystkie cechy/Komunikaty), widgety per typ (number+sparkline, boolean, string, schedule, JSON), tabela „pozostałe”. [ ] Budżet i ostatnie zdarzenia na dashboardzie klienta.
+- [x] Wykresy z auto-rozdzielczością; sparkline 24 h; `ChartExplorer` (ECharts) z drill-down, zakresami Dzień…Rok + własny, zoomem (dataZoom → zawężenie zakresu i przejście na surowe ≤ 48 h), porównaniem serii (≤ 6, druga oś Y dla innej jednostki) i okresów, statystykami, eksportem CSV, PNG (białe tło, stopka) i stanem w URL; endpointy `history` rozszerzone o `gaps/stats/markers`, `history/multi`, `history.csv`.
+- [x] Ustawienia urządzenia (nazwa/lokalizacja/opis dla tenant_admin; tryb z reauth, interwał, limit komend dla operatora).
+- [x] Wydajność: skeletony, code-splitting per ekran. [ ] Pomiar Web Vitals (`/metrics/web-vitals`).
 
 **Gotowe:** każda cecha z każdej fixture jest gdzieś widoczna; karta urządzenia < 500 ms przy ciepłym cache.
+[ ] Pomiar czasu karty urządzenia na staging.
 
 ## Etap 4 — Sterowanie
 

@@ -18,6 +18,11 @@ function Nav({ me }: { me: Me }) {
           <NavLink to="/admin/tenants" className={link}>
             {t.nav.tenants}
           </NavLink>
+          {me.role === "superadmin" && (
+            <NavLink to="/admin/labels" className={link}>
+              {t.nav.labels}
+            </NavLink>
+          )}
         </>
       )}
       {me.role === "tenant_admin" && me.tenant && (

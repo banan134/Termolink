@@ -14,6 +14,9 @@ const TenantDetailPage = lazy(() => import("@/features/admin/TenantDetailPage"))
 const TenantUsersPage = lazy(() => import("@/features/admin/TenantUsersPage"));
 const DevicesPage = lazy(() => import("@/features/devices/DevicesPage"));
 const DevicePage = lazy(() => import("@/features/devices/DevicePage"));
+const DeviceSettingsPage = lazy(() => import("@/features/devices/DeviceSettingsPage"));
+const ChartExplorerPage = lazy(() => import("@/features/charts/ChartExplorerPage"));
+const LabelsPage = lazy(() => import("@/features/admin/LabelsPage"));
 
 function Fallback() {
   return (
@@ -38,6 +41,9 @@ export function AppRoutes() {
           <Route path="/t/:tid/users" element={<TenantUsersPage />} />
           <Route path="/t/:tid" element={<DevicesPage />} />
           <Route path="/t/:tid/devices/:id" element={<DevicePage />} />
+          <Route path="/t/:tid/devices/:id/settings" element={<DeviceSettingsPage />} />
+          <Route path="/t/:tid/devices/:id/chart" element={<ChartExplorerPage />} />
+          <Route path="/admin/labels" element={<LabelsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
