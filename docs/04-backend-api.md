@@ -32,7 +32,7 @@ Konwencje:
 | Metoda | Ścieżka | Opis |
 |---|---|---|
 | GET/POST | `/admin/tenants` | lista z `devices_count, online_count, budget:{used,limit,reset_at}` |
-| GET/PATCH | `/admin/tenants/{id}` | `control_allowed`, `report_header_text`, `timezone` |
+| GET/PATCH/DELETE | `/admin/tenants/{id}` | `control_allowed`, `report_header_text`, `timezone`; DELETE (tylko superadmin) usuwa klienta trwale z użytkownikami, urządzeniami, historią, alarmami i raportami (wpis `tenant.deleted` w audycie) |
 | POST/DELETE | `/admin/tenants/{id}/logo` | multipart, PNG/SVG ≤ 1 MB |
 | GET | `/admin/tenants/{id}/users` | `{results:[{id,email,role,totp_enabled,is_active,last_login}], count, invitations:[…oczekujące]}` |
 | POST | `/admin/tenants/{id}/invitations` | `{email, role: tenant_admin\|tenant_user}` → 201; 409 `email_taken` |
@@ -63,7 +63,7 @@ Konwencje:
 | POST | `/tenants/{tid}/devices` | operator: `{provider_account_id, external_ids, display_name, description, location_text, lat, lon, mode, poll_interval_s}` → tworzy + job poll |
 | GET | `/tenants/{tid}/devices/{id}` | szczegóły + `budget` konta + `capabilities:{can_control:boolean, reasons:[]}` dla bieżącego użytkownika |
 | PATCH | `/tenants/{tid}/devices/{id}` | tenant_admin: `display_name, description, location_text, lat, lon`; operator dodatkowo `mode, poll_interval_s, commands_per_hour_limit` (zmiana `mode` wymaga `reauth`) |
-| DELETE | `/tenants/{tid}/devices/{id}` | archiwizacja (historia zostaje) |
+| DELETE | `/tenants/{tid}/devices/{id}` | archiwizacja (historia zostaje); `?permanent=1` (operator) usuwa trwale razem z historią pomiarów |
 | POST | `/tenants/{tid}/devices/{id}/refresh` | „Odśwież teraz” → `{job_id}`; 429 jeśli budżet < rezerwa |
 | GET | `/tenants/{tid}/devices/{id}/features` | `[{feature_name, label_pl, group_key, is_enabled, properties:{name:{type,unit,value,ts_device}}, commands:{name:{executable, params}}, unsupported_commands}]` z `feature_latest` |
 | GET | `/tenants/{tid}/devices/{id}/history` | `?feature=&property=&from=&to=&resolution=raw\|1h\|1d&max_points=2000` → `{unit, resolution, points:[{ts, value}] \| [{ts,min,avg,max,last,count}], gaps:[{from,to}], stats:{min:{ts,value},max:{ts,value},avg,last,count,availability_pct,delta?}, markers:[{ts,type:'command',label}]}`; auto-resolution gdy brak parametru (≤ 48 h raw, ≤ 90 d 1h, > 90 d 1d); surowe > max_points → downsampling LTTB |

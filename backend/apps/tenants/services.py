@@ -201,3 +201,47 @@ def remove_logo(request: Any, *, actor: Any, tenant: Tenant) -> Tenant:
     tenant.save(update_fields=["logo_path", "updated_at"])
     audit("tenant.logo.removed", request=request, user=actor, tenant=tenant, target=tenant)
     return tenant
+
+
+# ---------- permanent deletion (operator) ----------
+def delete_tenant(request: HttpRequest, *, actor: User, tenant: Tenant) -> None:
+    """Hard delete: every row of the tenant, incl. the Timescale history (no FK there) and files.
+
+    Superadmin only (checked by the view). Audit rows keep tenant_id NULL-able: the audit entry
+    is written with the tenant name in details so the trail survives the cascade.
+    """
+    import shutil
+    from pathlib import Path
+
+    from django.conf import settings
+    from django.db import connection
+
+    if actor.role != Role.SUPERADMIN:
+        raise ApiError("forbidden", "Tylko superadmin może usunąć klienta.", status_code=403)
+    name, tenant_id = tenant.name, tenant.id
+    from apps.devices.models import Device
+    from apps.providers.models import ProviderAccount
+
+    with system_context(), connection.cursor() as cursor:
+        cursor.execute("DELETE FROM feature_values WHERE tenant_id = %s", [tenant_id])
+        cursor.execute("UPDATE audit_log SET tenant_id = NULL WHERE tenant_id = %s", [tenant_id])
+        # PROTECT foreign keys (devices → accounts, users → tenant): explicit order
+        Device.objects.filter(tenant=tenant).delete()
+        ProviderAccount.objects.filter(tenant=tenant).delete()
+        TenantMembership.objects.filter(tenant=tenant).delete()
+        User.objects.filter(tenant=tenant).delete()
+        for folder in ("logos", "reports"):
+            path = Path(settings.MEDIA_ROOT) / folder / str(tenant_id)
+            if path.is_dir():
+                shutil.rmtree(path, ignore_errors=True)
+        if tenant.logo_path:
+            logo = Path(settings.MEDIA_ROOT) / tenant.logo_path
+            if logo.exists():
+                logo.unlink()
+        tenant.delete()
+    audit(
+        "tenant.deleted",
+        request=request,
+        user=actor,
+        details={"tenant_id": str(tenant_id), "name": name},
+    )

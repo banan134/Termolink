@@ -53,6 +53,13 @@ export default function DeviceSettingsPage() {
       navigate(`/t/${tid}/devices/${id}`);
     },
   });
+  const remove = useMutation({
+    mutationFn: () => devicesApi.remove(tid, id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["devices", tid] });
+      navigate(`/t/${tid}`);
+    },
+  });
   const archive = useMutation({
     mutationFn: () => devicesApi.archive(tid, id),
     onSuccess: () => {
@@ -115,6 +122,11 @@ export default function DeviceSettingsPage() {
             {operator && (
               <Button type="button" variant="danger" loading={archive.isPending} onClick={() => window.confirm(t.devices.archiveConfirm) && archive.mutate()}>
                 {t.devices.archive}
+              </Button>
+            )}
+            {operator && (
+              <Button type="button" variant="danger" loading={remove.isPending} onClick={() => window.prompt(t.devices.deleteConfirm(device.data!.display_name)) === device.data!.display_name && remove.mutate()}>
+                {t.devices.deletePermanently}
               </Button>
             )}
             <span style={{ flex: 1 }} />

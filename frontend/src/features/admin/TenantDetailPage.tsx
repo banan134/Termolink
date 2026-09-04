@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError } from "@/api/client";
 import { tenantsApi } from "@/api/tenants";
 import { PageTitle } from "@/app/AppLayout";
 import { Alert, Button, Card, Chip, Skeleton } from "@/components/ui";
+import { useMe } from "@/features/auth/useMe";
 import { t } from "@/i18n/pl";
 import { ProviderAccountsCard, TenantDevicesCard } from "./ProviderAccountsCard";
 import { UsersCard } from "./UsersCard";
@@ -12,6 +13,15 @@ import s from "./admin.module.css";
 export default function TenantDetailPage() {
   const { id = "" } = useParams();
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const me = useMe();
+  const removeTenant = useMutation({
+    mutationFn: () => tenantsApi.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tenants"] });
+      navigate("/admin/tenants");
+    },
+  });
   const tenant = useQuery({ queryKey: ["tenant", id], queryFn: () => tenantsApi.get(id) });
   const uploadLogo = useMutation({
     mutationFn: (file: File) => tenantsApi.uploadLogo(id, file),
@@ -99,6 +109,22 @@ export default function TenantDetailPage() {
         <ProviderAccountsCard tenantId={id} />
         <TenantDevicesCard tenantId={id} />
         <UsersCard tenantId={id} scope="admin" />
+        {me.data?.role === "superadmin" && (
+          <Card title={t.admin.dangerZone}>
+            <p className={s.muted}>{t.admin.deleteTenantHelp}</p>
+            {removeTenant.isError && <Alert tone="error">{t.common.error}</Alert>}
+            <Button
+              variant="danger"
+              loading={removeTenant.isPending}
+              onClick={() => {
+                const typed = window.prompt(t.admin.deleteTenantPrompt(row.name));
+                if (typed === row.name) removeTenant.mutate();
+              }}
+            >
+              {t.admin.deleteTenant}
+            </Button>
+          </Card>
+        )}
       </div>
     </>
   );

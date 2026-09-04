@@ -124,8 +124,12 @@ class DeviceDetailView(APIView):
         tenant = get_tenant_or_404(request, tenant_id)
         if not IsOperator().has_permission(request, self):
             raise forbidden()
-        device = services.get_device_or_404(tenant, device_id)
-        services.archive_device(request._request, actor=current_user(request), device=device)
+        permanent = request.query_params.get("permanent") in ("1", "true")
+        device = services.get_device_or_404(tenant, device_id, include_archived=permanent)
+        if permanent:
+            services.delete_device(request._request, actor=current_user(request), device=device)
+        else:
+            services.archive_device(request._request, actor=current_user(request), device=device)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

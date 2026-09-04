@@ -328,6 +328,28 @@ def archive_device(request: HttpRequest, *, actor: User, device: Device) -> None
     audit("device.archived", request=request, user=actor, tenant=device.tenant, target=device)
 
 
+def delete_device(request: HttpRequest, *, actor: User, device: Device) -> None:
+    """Permanent removal incl. the Timescale history (operator; docs/04 `?permanent=1`)."""
+    from django.db import connection
+
+    from apps.tenants.context import system_context
+
+    name, device_id, tenant = device.display_name, device.id, device.tenant
+    Job.objects.filter(kind="poll", status="queued", payload__device_id=str(device_id)).update(
+        status="failed", last_error="device deleted"
+    )
+    with system_context(), connection.cursor() as cursor:
+        cursor.execute("DELETE FROM feature_values WHERE device_id = %s", [device_id])
+        device.delete()
+    audit(
+        "device.deleted",
+        request=request,
+        user=actor,
+        tenant=tenant,
+        details={"device_id": str(device_id), "name": name},
+    )
+
+
 def refresh_now(request: HttpRequest, *, actor: User, device: Device) -> Job:
     """„Odśwież teraz” — from the reserve budget; 429 when the reserve is gone (docs/04)."""
     account = device.provider_account
