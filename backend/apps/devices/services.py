@@ -339,7 +339,7 @@ def delete_device(request: HttpRequest, *, actor: User, device: Device) -> None:
         status="failed", last_error="device deleted"
     )
     with system_context(), connection.cursor() as cursor:
-        cursor.execute("DELETE FROM feature_values WHERE device_id = %s", [device_id])
+        cursor.execute("DELETE FROM feature_values_rls WHERE device_id = %s", [device_id])
         device.delete()
     audit(
         "device.deleted",
