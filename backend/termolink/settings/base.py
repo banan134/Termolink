@@ -181,6 +181,9 @@ if _smtp:
     vars().update(EMAIL_CONFIG)
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+if not _is_pytest:
+    # SMTP from the operator settings (DB) when enabled, else SMTP_URL, else console
+    EMAIL_BACKEND = "apps.core.mail.DatabaseEmailBackend"
 DEFAULT_FROM_EMAIL = "Termolink <noreply@termolink.local>"
 
 # --- Termolink-specific configuration (docs/11 .env.example) ---

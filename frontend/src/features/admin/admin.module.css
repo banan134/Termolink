@@ -66,3 +66,7 @@
 
 .fileButton { display: inline-flex; align-items: center; padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-elevated); cursor: pointer; font-size: var(--fs-sm); }
 .error { color: var(--danger); font-size: var(--fs-sm); }
+
+.twoCols { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--sp-2); align-items: end; }
+.toggle { display: flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-sm); cursor: pointer; margin: var(--sp-2) 0; }
+.actions { display: flex; gap: var(--sp-2); justify-content: flex-end; align-items: center; margin-top: var(--sp-2); }

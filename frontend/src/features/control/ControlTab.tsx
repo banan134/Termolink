@@ -6,7 +6,7 @@ import { controlApi, TERMINAL, type Command } from "@/api/control";
 import type { DeviceDetails, FeatureRow } from "@/api/devices";
 import { Alert, Button, Card, Chip, Field } from "@/components/ui";
 import { groupLabel, groupRows } from "@/features/devices/groups";
-import { formatDateTime } from "@/features/devices/format";
+import { formatDateTime, formatValue, propertyLabel } from "@/features/devices/format";
 import { t } from "@/i18n/pl";
 import { ParamInputs } from "./ParamInputs";
 import { defaultParams, type ParamSchema } from "./params";
@@ -82,7 +82,7 @@ export function ControlTab({ tid, device, rows }: { tid: string; device: DeviceD
 function currentValues(row: FeatureRow): string {
   return Object.entries(row.properties)
     .filter(([, p]) => p.value !== null && p.value !== undefined && typeof p.value !== "object")
-    .map(([name, p]) => `${name}: ${String(p.value)}${p.unit ? ` ${p.unit}` : ""}`)
+    .map(([name, p]) => `${propertyLabel(name)}: ${formatValue(p.value, p.unit)}`)
     .join(" · ");
 }
 

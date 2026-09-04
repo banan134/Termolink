@@ -84,6 +84,13 @@ Konwencje:
 | GET | `/tenants/{tid}/commands/{cid}` | status + `job:{kind,status,error}`; UI polluje do `verified`/`failed`/`verify_mismatch`/`expired` |
 | GET | `/tenants/{tid}/commands` | dziennik zmian: `{results:[…, device_name], count}`; filtry `device`, `status`, `page`, `page_size` (≤ 200) |
 
+## Ustawienia systemu (superadmin)
+
+| Metoda | Ścieżka | Opis |
+|---|---|---|
+| GET/PUT | `/admin/settings/mail` | SMTP operatora: `enabled, host, port, username, password (tylko zapis; API zwraca `has_password`), use_tls/use_ssl, from_email, timeout_s` + wynik ostatniego testu. Hasło szyfrowane AES-GCM (scope `mail`). Gdy `enabled`, backend poczty (`apps.core.mail.DatabaseEmailBackend`) używa tych ustawień, inaczej `SMTP_URL` z env, a bez niego logów konsoli. |
+| POST | `/admin/settings/mail/test` | `{to}` → wysyła wiadomość testową z zapisanych ustawień; `{ok, error}` zapisane na wierszu |
+
 ## Alarmy
 
 GET/PATCH `/tenants/{tid}/alerts` (`acknowledged`), GET/POST/PATCH/DELETE `/tenants/{tid}/alert-rules`.

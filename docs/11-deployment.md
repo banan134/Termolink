@@ -96,7 +96,7 @@ VIESSMANN_IAM_BASE=https://iam.viessmann-climatesolutions.com/idp/v3
 OAUTH_REDIRECT_BASE=https://app.termolink.example
 PUBLIC_BASE_URL=https://app.termolink.example   # linki w e-mailach (reset hasła, zaproszenia); domyślnie = OAUTH_REDIRECT_BASE
 RAW_RETENTION_DAYS=          # puste = bez limitu
-SMTP_URL=
+SMTP_URL=                    # opcjonalnie — operator może ustawić SMTP w UI (/admin/settings), które ma pierwszeństwo
 ALERT_EMAIL_OPERATOR=
 SENSITIVE_COMMANDS=setMode,setSchedule,setCurve,deactivate
 ```

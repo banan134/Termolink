@@ -21,6 +21,7 @@ const SchedulesPage = lazy(() => import("@/features/reports/SchedulesPage"));
 const AlertsPage = lazy(() => import("@/features/alerts/AlertsPage"));
 const AlertRulesPage = lazy(() => import("@/features/alerts/AlertRulesPage"));
 const ChangesPage = lazy(() => import("@/features/control/ChangesPage"));
+const SettingsPage = lazy(() => import("@/features/admin/SettingsPage"));
 const LabelsPage = lazy(() => import("@/features/admin/LabelsPage"));
 
 function Fallback() {
@@ -54,6 +55,7 @@ export function AppRoutes() {
           <Route path="/t/:tid/reports/schedules" element={<SchedulesPage />} />
           <Route path="/t/:tid/alert-rules" element={<AlertRulesPage />} />
           <Route path="/admin/labels" element={<LabelsPage />} />
+          <Route path="/admin/settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
