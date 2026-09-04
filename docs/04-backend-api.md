@@ -65,6 +65,10 @@ Konwencje:
 | PATCH | `/tenants/{tid}/devices/{id}` | tenant_admin: `display_name, description, location_text, lat, lon`; operator dodatkowo `mode, poll_interval_s, commands_per_hour_limit` (zmiana `mode` wymaga `reauth`) |
 | DELETE | `/tenants/{tid}/devices/{id}` | archiwizacja (historia zostaje); `?permanent=1` (operator) usuwa trwale razem z historią pomiarów |
 | POST | `/tenants/{tid}/devices/{id}/refresh` | „Odśwież teraz” → `{job_id}`; 429 jeśli budżet < rezerwa |
+| GET | `/tenants/{tid}/devices/{id}/insights?period=week\|month` | „Co się zmieniło”: liczniki (przyrost), czujniki (średnia) i dostępność — bieżące 7/30 dni vs poprzednie, z `delta`/`delta_pct` |
+| GET | `/admin/overview` | operator: klienci → urządzenia (karta + `lat/lon` + `open_alerts`), `totals` (statusy, alarmy, tryb sterowania), konta producentów z budżetem |
+| GET | `/tenants/{tid}/devices/{id}/insights?period=week\|month` | „Co się zmieniło”: liczniki (przyrost), czujniki (średnia) i dostępność — bieżące 7/30 dni vs poprzednie, z `delta`/`delta_pct` |
+| GET | `/admin/overview` | operator: klienci → urządzenia (karta + `lat/lon` + `open_alerts`), `totals` (statusy, alarmy, tryb sterowania), konta producentów z budżetem |
 | GET | `/tenants/{tid}/devices/{id}/features` | `[{feature_name, label_pl, group_key, is_enabled, properties:{name:{type,unit,value,ts_device}}, commands:{name:{executable, params}}, unsupported_commands}]` z `feature_latest` |
 | GET | `/tenants/{tid}/devices/{id}/history` | `?feature=&property=&from=&to=&resolution=raw\|1h\|1d&max_points=2000` → `{unit, resolution, points:[{ts, value}] \| [{ts,min,avg,max,last,count}], gaps:[{from,to}], stats:{min:{ts,value},max:{ts,value},avg,last,count,availability_pct,delta?}, markers:[{ts,type:'command',label}]}`; auto-resolution gdy brak parametru (≤ 48 h raw, ≤ 90 d 1h, > 90 d 1d); surowe > max_points → downsampling LTTB |
 | POST | `/tenants/{tid}/history/multi` | `{series:[{device_id,feature,property}], from, to, resolution?}` → tablica jak wyżej (do 6 serii; porównania w eksploratorze) |

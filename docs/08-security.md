@@ -63,6 +63,8 @@
 - CSP (etap 6, nagłówek z Caddy, nie `django-csp`): `default-src 'self'; script-src 'self';
   style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src
   'self'; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';
+  `img-src` dopuszcza dodatkowo kafelki mapy `https://*.tile.openstreetmap.org` (panel operatora;
+  przeglądarka operatora pobiera je bezpośrednio — bez danych klientów w URL).
   object-src 'none'`. `'unsafe-inline'` tylko dla stylów (ECharts ustawia atrybuty `style`);
   skrypty wyłącznie z własnych plików Vite. Panel Django (`/admin-django/*`, `/api/schema/*`)
   ma osobną CSP z `script-src 'unsafe-inline'` i jest za basic-auth.

@@ -124,7 +124,29 @@ function historyQuery(params: HistoryParams): string {
   return q.toString();
 }
 
+export type InsightItem = {
+  kind: "counter" | "average" | "availability";
+  feature: string | null;
+  property: string | null;
+  label: string;
+  unit: string | null;
+  current: number | null;
+  previous: number | null;
+  delta: number | null;
+  delta_pct: number | null;
+};
+export type Insights = { period: "week" | "month"; days: number; current: { from: string; to: string }; previous: { from: string; to: string }; items: InsightItem[] };
+
+export type OverviewDevice = DeviceCard & { tenant_id: string; tenant_name: string; lat: number | null; lon: number | null; open_alerts: number };
+export type Overview = {
+  totals: { tenants: number; devices: number; by_status: Record<string, number>; open_alerts: number; control_mode: number };
+  tenants: { id: string; name: string; control_allowed: boolean; devices: OverviewDevice[]; open_alerts: number }[];
+  accounts: { id: string; tenant_id: string; tenant_name: string; label: string; provider: string; status: string; budget: BudgetInfo }[];
+};
+
 export const devicesApi = {
+  insights: (tid: string, id: string, period: "week" | "month") => api<Insights>(`/tenants/${tid}/devices/${id}/insights?period=${period}`),
+  overview: () => api<Overview>("/admin/overview"),
   list: (tid: string) => api<{ results: DeviceCard[]; count: number }>(`/tenants/${tid}/devices`),
   get: (tid: string, id: string) => api<DeviceDetails>(`/tenants/${tid}/devices/${id}`),
   create: (tid: string, body: DeviceCreate) => api<DeviceDetails>(`/tenants/${tid}/devices`, { method: "POST", body }),
