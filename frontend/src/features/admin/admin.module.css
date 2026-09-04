@@ -64,7 +64,7 @@
   color: var(--text-muted);
 }
 
-.fileButton { display: inline-flex; align-items: center; padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-elevated); cursor: pointer; font-size: var(--fs-sm); }
+.fileButton { display: inline-flex; align-items: center; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: var(--fs-sm); }
 .error { color: var(--danger); font-size: var(--fs-sm); }
 
 .twoCols { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--sp-2); align-items: end; }

@@ -19,6 +19,9 @@ export type DeviceCard = {
   last_polled_at: string | null;
   next_poll_at: string;
   highlights: Highlight[];
+  lat: number | null;
+  lon: number | null;
+  hidden_widgets: string[];
 };
 
 export type BudgetInfo = {
@@ -116,6 +119,9 @@ export type DeviceCreate = {
 
 export type DevicePatch = Partial<Pick<DeviceCreate, "display_name" | "description" | "location_text" | "mode" | "poll_interval_s">> & {
   commands_per_hour_limit?: number;
+  hidden_widgets?: string[];
+  lat?: number | null;
+  lon?: number | null;
 };
 
 function historyQuery(params: HistoryParams): string {
@@ -137,7 +143,7 @@ export type InsightItem = {
 };
 export type Insights = { period: "week" | "month"; days: number; current: { from: string; to: string }; previous: { from: string; to: string }; items: InsightItem[] };
 
-export type OverviewDevice = DeviceCard & { tenant_id: string; tenant_name: string; lat: number | null; lon: number | null; open_alerts: number };
+export type OverviewDevice = DeviceCard & { tenant_id: string; tenant_name: string; open_alerts: number };
 export type Overview = {
   totals: { tenants: number; devices: number; by_status: Record<string, number>; open_alerts: number; control_mode: number };
   tenants: { id: string; name: string; control_allowed: boolean; devices: OverviewDevice[]; open_alerts: number }[];

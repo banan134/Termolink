@@ -62,7 +62,7 @@ Konwencje:
 | GET | `/tenants/{tid}/devices` | karty: `{id, display_name, model, location_text, description, mode, status, status_since, last_seen_at, highlights:[{feature,property,label,value,unit}]}` |
 | POST | `/tenants/{tid}/devices` | operator: `{provider_account_id, external_ids, display_name, description, location_text, lat, lon, mode, poll_interval_s}` → tworzy + job poll |
 | GET | `/tenants/{tid}/devices/{id}` | szczegóły + `budget` konta + `capabilities:{can_control:boolean, reasons:[]}` dla bieżącego użytkownika |
-| PATCH | `/tenants/{tid}/devices/{id}` | tenant_admin: `display_name, description, location_text, lat, lon`; operator dodatkowo `mode, poll_interval_s, commands_per_hour_limit` (zmiana `mode` wymaga `reauth`) |
+| PATCH | `/tenants/{tid}/devices/{id}` | tenant_admin: `display_name, description, location_text, lat, lon, hidden_widgets[]` (kafelki „cecha.właściwość” ukryte na Przeglądzie/Wykresach — wspólne dla klienta); operator dodatkowo `mode, poll_interval_s, commands_per_hour_limit` (zmiana `mode` wymaga `reauth`) |
 | DELETE | `/tenants/{tid}/devices/{id}` | archiwizacja (historia zostaje); `?permanent=1` (operator) usuwa trwale razem z historią pomiarów |
 | POST | `/tenants/{tid}/devices/{id}/refresh` | „Odśwież teraz” → `{job_id}`; 429 jeśli budżet < rezerwa |
 | GET | `/tenants/{tid}/devices/{id}/insights?period=week\|month` | „Co się zmieniło”: liczniki (przyrost), czujniki (średnia) i dostępność — bieżące 7/30 dni vs poprzednie, z `delta`/`delta_pct` |

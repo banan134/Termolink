@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { devicesApi, type FeatureRow } from "@/api/devices";
 import { ApiError } from "@/api/client";
@@ -39,6 +39,12 @@ export default function DevicePage() {
     onSuccess: () => setTimeout(() => qc.invalidateQueries({ queryKey: ["features", tid, id] }), 8000),
   });
   const rows = useMemo(() => features.data?.results ?? [], [features.data]);
+  const hidden = useMemo(() => new Set(device.data?.hidden_widgets ?? []), [device.data?.hidden_widgets]);
+  const setHidden = useMutation({
+    mutationFn: (list: string[]) => devicesApi.patch(tid, id, { hidden_widgets: list }),
+    onSuccess: (row) => qc.setQueryData(["device", tid, id], row),
+  });
+  const [showHidden, setShowHidden] = useState(false);
   const enabledRows = useMemo(() => rows.filter((r) => r.is_enabled && hasValues(r)), [rows]);
   const groups = useMemo(() => groupRows(enabledRows), [enabledRows]);
 
@@ -47,6 +53,8 @@ export default function DevicePage() {
   const d = device.data;
   const canRefresh = me.data?.role !== "tenant_user";
   const canEdit = me.data?.role !== "tenant_user";
+  const hideKey = (feature: string, prop: string) => `${feature}.${prop}`;
+  const hiddenEntries = rows.flatMap((r) => Object.keys(r.properties).filter((prop) => hidden.has(hideKey(r.feature_name, prop))).map((prop) => ({ row: r, prop })));
 
   return (
     <>
@@ -96,6 +104,34 @@ export default function DevicePage() {
         </Card>
       )}
 
+      {(tab === "overview" || tab === "charts") && hidden.size > 0 && (
+        <div className={s.hiddenBar}>
+          <span>{t.widgets.hiddenCount(hidden.size)}</span>
+          <button type="button" className={s.linkBtn} onClick={() => setShowHidden(!showHidden)}>
+            {showHidden ? t.widgets.hideList : t.widgets.showList}
+          </button>
+          {showHidden && (
+            <div className={s.hiddenList}>
+              {hiddenEntries.map(({ row, prop }) => (
+                <div key={hideKey(row.feature_name, prop)} className={s.hiddenRow}>
+                  <span>{row.label_pl ?? row.feature_name}{prop !== "value" ? ` · ${propertyLabel(prop)}` : ""}</span>
+                  <span className={s.mono}>{row.feature_name}</span>
+                  {canEdit && (
+                    <button type="button" className={s.linkBtn} onClick={() => setHidden.mutate([...hidden].filter((k) => k !== hideKey(row.feature_name, prop)))}>
+                      {t.widgets.restore}
+                    </button>
+                  )}
+                </div>
+              ))}
+              {canEdit && hiddenEntries.length > 1 && (
+                <button type="button" className={s.linkBtn} onClick={() => setHidden.mutate([])}>
+                  {t.widgets.restoreAll}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       {tab === "overview" && <InsightsCard tid={tid} id={id} />}
       {tab === "overview" &&
         groups
@@ -106,14 +142,16 @@ export default function DevicePage() {
               <div className={s.widgets}>
                 {g.rows.flatMap((row) =>
                   Object.entries(row.properties)
-                    .filter(([, p]) => p.value !== null && p.value !== undefined)
-                    .map(([prop, p]) => <PropertyWidget key={`${row.feature_name}:${prop}`} tid={tid} id={id} row={row} prop={prop} p={p} />),
+                    .filter(([prop, p]) => p.value !== null && p.value !== undefined && !hidden.has(hideKey(row.feature_name, prop)))
+                    .map(([prop, p]) => (
+                      <PropertyWidget key={`${row.feature_name}:${prop}`} tid={tid} id={id} row={row} prop={prop} p={p} onHide={canEdit ? () => setHidden.mutate([...hidden, hideKey(row.feature_name, prop)]) : undefined} />
+                    )),
                 )}
               </div>
             </section>
           ))}
 
-      {tab === "charts" && <ChartsTab tid={tid} id={id} rows={enabledRows} />}
+      {tab === "charts" && <ChartsTab tid={tid} id={id} rows={enabledRows} hidden={hidden} />}
 
       {tab === "control" && <ControlTab tid={tid} device={d} rows={rows} />}
 
@@ -128,11 +166,11 @@ export default function DevicePage() {
   );
 }
 
-function ChartsTab({ tid, id, rows }: { tid: string; id: string; rows: FeatureRow[] }) {
+function ChartsTab({ tid, id, rows, hidden }: { tid: string; id: string; rows: FeatureRow[]; hidden: Set<string> }) {
   const compare = (range: string) => `/t/${tid}/devices/${id}/chart?feature=heating.sensors.temperature.outside&range=${range}&overlay=1`;
   const numeric = rows.flatMap((r) =>
     Object.entries(r.properties)
-      .filter(([, p]) => p.type === "number" && typeof p.value === "number" && p.unit)
+      .filter(([prop, p]) => p.type === "number" && typeof p.value === "number" && p.unit && !hidden.has(`${r.feature_name}.${prop}`))
       .map(([prop]) => ({ row: r, prop })),
   );
   return (

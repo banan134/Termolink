@@ -31,7 +31,14 @@ from .models import (
     FeatureLatest,
 )
 
-TENANT_ADMIN_FIELDS = ("display_name", "description", "location_text", "lat", "lon")
+TENANT_ADMIN_FIELDS = (
+    "display_name",
+    "description",
+    "location_text",
+    "lat",
+    "lon",
+    "hidden_widgets",
+)
 OPERATOR_FIELDS = (*TENANT_ADMIN_FIELDS, "mode", "poll_interval_s", "commands_per_hour_limit")
 
 # docs/04: fallback highlights when no feature_labels.highlight (stage 3)
@@ -115,6 +122,9 @@ def card(device: Device, highlights: list[dict[str, Any]]) -> dict[str, Any]:
         "display_name": device.display_name,
         "model": device.model,
         "location_text": device.location_text,
+        "lat": float(device.lat) if device.lat is not None else None,
+        "lon": float(device.lon) if device.lon is not None else None,
+        "hidden_widgets": list(device.hidden_widgets or []),
         "description": device.description,
         "mode": device.mode,
         "status": device.status,

@@ -64,6 +64,9 @@ class DevicePatchSerializer(serializers.Serializer[dict[str, Any]]):
     )
     lat = serializers.DecimalField(required=False, allow_null=True, max_digits=9, decimal_places=6)
     lon = serializers.DecimalField(required=False, allow_null=True, max_digits=9, decimal_places=6)
+    hidden_widgets = serializers.ListField(
+        child=serializers.CharField(max_length=200), required=False, max_length=500
+    )
     mode = serializers.ChoiceField(choices=DeviceMode.choices, required=False)
     poll_interval_s = serializers.IntegerField(
         required=False, allow_null=True, min_value=60, max_value=86400

@@ -1,19 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import { alertsApi } from "@/api/alerts";
 import { devicesApi, type OverviewDevice } from "@/api/devices";
 import { PageTitle } from "@/app/AppLayout";
 import { Card, Chip, EmptyState, Field, Skeleton } from "@/components/ui";
 import { AlertItem } from "@/features/alerts/AlertsPage";
+import { DeviceMap } from "@/features/devices/DeviceMap";
 import { ModeChip, StatusChip } from "@/features/devices/StatusChip";
 import { formatDateTime, formatValue } from "@/features/devices/format";
 import { t } from "@/i18n/pl";
 import s from "./home.module.css";
-
-const STATUS_COLOR: Record<string, string> = { online: "#1a7f37", offline: "#b91c1c", error: "#b91c1c", rate_limited: "#b45309", unknown: "#6b7280" };
 
 /** Panel operatora (docs/09): wszystkie kotły klientów na jednym ekranie + mapa. */
 export function OperatorDashboard() {
@@ -48,7 +45,7 @@ export function OperatorDashboard() {
 
       <div className={s.grid}>
         <Card title={t.operator.map}>
-          <DeviceMap devices={devices} />
+          <DeviceMap devices={devices} linkFor={(d) => `/t/${d.tenant_id}/devices/${d.id}`} />
         </Card>
         <Card title={t.operator.alertsList}>
           {alerts.data && alerts.data.results.length === 0 && <p className={s.sub}>{t.operator.noAlerts}</p>}
@@ -136,45 +133,4 @@ function DeviceTile({ d }: { d: OverviewDevice }) {
       </div>
     </Link>
   );
-}
-
-function DeviceMap({ devices }: { devices: OverviewDevice[] }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const located = devices.filter((d) => d.lat !== null && d.lon !== null);
-  useEffect(() => {
-    if (!ref.current) return;
-    if (!mapRef.current) {
-      mapRef.current = L.map(ref.current, { scrollWheelZoom: false }).setView([53.78, 20.49], 7);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap", maxZoom: 18 }).addTo(mapRef.current);
-    }
-    const map = mapRef.current;
-    const layer = L.layerGroup().addTo(map);
-    for (const d of located) {
-      const marker = L.circleMarker([d.lat!, d.lon!], { radius: 9, color: STATUS_COLOR[d.status] ?? "#6b7280", fillColor: STATUS_COLOR[d.status] ?? "#6b7280", fillOpacity: 0.85, weight: 2 });
-      marker.bindPopup(`<b>${escapeHtml(d.display_name)}</b><br>${escapeHtml(d.tenant_name)}<br>${escapeHtml(d.status)} · ${escapeHtml(d.model)}<br><a href="/t/${d.tenant_id}/devices/${d.id}">${escapeHtml(t.operator.open)}</a>`);
-      marker.addTo(layer);
-    }
-    if (located.length > 0) map.fitBounds(L.latLngBounds(located.map((d) => [d.lat!, d.lon!] as [number, number])).pad(0.3), { maxZoom: 12 });
-    return () => {
-      layer.remove();
-    };
-  }, [located]);
-  useEffect(
-    () => () => {
-      mapRef.current?.remove();
-      mapRef.current = null;
-    },
-    [],
-  );
-  return (
-    <>
-      <div ref={ref} className={s.map} />
-      {located.length === 0 && <p className={s.sub}>{t.operator.mapEmpty}</p>}
-    </>
-  );
-}
-
-function escapeHtml(v: string): string {
-  return v.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
 }
