@@ -6,11 +6,17 @@ from django.db import models
 
 class AuditLog(models.Model):
     id = models.BigAutoField(primary_key=True)
+    # ON DELETE SET NULL is enforced by the database (migration 0002): the app role may not
+    # UPDATE the append-only audit_log, but referential-integrity triggers run as the owner.
     tenant = models.ForeignKey(
-        "tenants.Tenant", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+        "tenants.Tenant", null=True, blank=True, on_delete=models.DO_NOTHING, related_name="+"
     )
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.DO_NOTHING,
+        related_name="+",
     )
     action = models.TextField()  # e.g. auth.login, auth.totp.enabled, device.mode.changed
     target_type = models.TextField(blank=True, default="")
