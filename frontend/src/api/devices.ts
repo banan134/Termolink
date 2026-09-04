@@ -130,6 +130,7 @@ export const devicesApi = {
   create: (tid: string, body: DeviceCreate) => api<DeviceDetails>(`/tenants/${tid}/devices`, { method: "POST", body }),
   patch: (tid: string, id: string, body: DevicePatch) => api<DeviceDetails>(`/tenants/${tid}/devices/${id}`, { method: "PATCH", body }),
   archive: (tid: string, id: string) => api<void>(`/tenants/${tid}/devices/${id}`, { method: "DELETE" }),
+  remove: (tid: string, id: string) => api<void>(`/tenants/${tid}/devices/${id}?permanent=1`, { method: "DELETE" }),
   refresh: (tid: string, id: string) => api<{ job_id: string }>(`/tenants/${tid}/devices/${id}/refresh`, { method: "POST" }),
   features: (tid: string, id: string) => api<{ results: FeatureRow[]; count: number }>(`/tenants/${tid}/devices/${id}/features`),
   history: (tid: string, id: string, params: HistoryParams) =>

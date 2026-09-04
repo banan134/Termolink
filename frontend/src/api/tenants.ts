@@ -41,6 +41,7 @@ export const tenantsApi = {
   create: (body: { name: string; type: "company" | "person" }) =>
     api<TenantRow>("/admin/tenants", { method: "POST", body }),
   get: (id: string) => api<TenantRow>(`/admin/tenants/${id}`),
+  remove: (id: string) => api<void>(`/admin/tenants/${id}`, { method: "DELETE" }),
   uploadLogo: async (id: string, file: File): Promise<TenantRow> => {
     const form = new FormData();
     form.append("file", file);

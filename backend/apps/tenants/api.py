@@ -133,6 +133,13 @@ class AdminTenantDetailView(APIView):
         )
         return Response(TenantSerializer(_with_counts(tenant)).data)
 
+    @extend_schema(responses={204: None})
+    def delete(self, request: Request, tenant_id: str) -> Response:
+        """Permanent deletion of a customer with all data (superadmin, docs/04)."""
+        tenant = get_tenant_or_404(request, tenant_id)
+        services.delete_tenant(request._request, actor=current_user(request), tenant=tenant)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class AdminTenantLogoView(APIView):
     """Logo used in report headers (docs/10). PNG/JPEG only — SVG could carry scripts (docs/08)."""
