@@ -32,6 +32,11 @@ def auth_start(iam_base: str, client_id: str, redirect_uri: str, state: str) -> 
             "code_challenge": challenge,
             "code_challenge_method": "S256",
             "state": state,
+            # ZAŁOŻENIE (docs/01): standard OIDC prompt=login forces the IdP to show the login
+            # form even when the browser holds a ViCare session — needed to connect a different
+            # customer account from the operator's browser. Unknown parameters are ignored by
+            # compliant IdPs, so this is safe if Viessmann does not honour it.
+            "prompt": "login",
         }
     )
     return AuthStart(url=f"{iam_base}/authorize?{query}", saved={"code_verifier": verifier})
