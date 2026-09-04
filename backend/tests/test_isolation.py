@@ -93,6 +93,8 @@ ENDPOINTS: list[Endpoint] = [
     Endpoint("device-status-history", "GET"),
     Endpoint("device-history-csv", "GET"),
     Endpoint("device-messages", "GET"),
+    Endpoint("device-insights", "GET"),
+    Endpoint("device-insights", "GET"),
     Endpoint("history-multi", "POST", body={"series": []}),
     Endpoint(
         "device-commands",

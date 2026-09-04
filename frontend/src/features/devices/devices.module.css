@@ -302,3 +302,10 @@
 .scheduleDay { min-width: 56px; color: var(--fg-muted); font-weight: 600; }
 .scheduleEntries { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .scheduleEntry { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 6px; white-space: nowrap; }
+
+.compareBar { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; margin-bottom: var(--sp-3); }
+.insights { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-2); }
+.insight { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--sp-3); display: grid; gap: 2px; }
+.insightValue { font-size: var(--fs-lg); font-weight: 600; }
+.insightDelta { font-size: var(--fs-sm); }
+.up { color: var(--danger); } .down { color: var(--ok); } .flat { color: var(--fg-muted); }

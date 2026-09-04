@@ -13,6 +13,7 @@ import { PropertyWidget } from "./Widgets";
 import { ControlTab } from "@/features/control/ControlTab";
 import { formatDateTime, formatValue, propertyLabel } from "./format";
 import { ScheduleView } from "./ScheduleView";
+import { InsightsCard } from "./InsightsCard";
 import { groupLabel, groupRows, hasValues } from "./groups";
 import s from "./devices.module.css";
 
@@ -95,6 +96,7 @@ export default function DevicePage() {
         </Card>
       )}
 
+      {tab === "overview" && <InsightsCard tid={tid} id={id} />}
       {tab === "overview" &&
         groups
           .filter((g) => g.key !== "messages")
@@ -127,18 +129,26 @@ export default function DevicePage() {
 }
 
 function ChartsTab({ tid, id, rows }: { tid: string; id: string; rows: FeatureRow[] }) {
+  const compare = (range: string) => `/t/${tid}/devices/${id}/chart?feature=heating.sensors.temperature.outside&range=${range}&overlay=1`;
   const numeric = rows.flatMap((r) =>
     Object.entries(r.properties)
       .filter(([, p]) => p.type === "number" && typeof p.value === "number" && p.unit)
       .map(([prop]) => ({ row: r, prop })),
   );
   return (
+    <>
+      <div className={s.compareBar}>
+        <span className={s.sub}>{t.insights.compareHint}</span>
+        <Link to={compare("week")} className={s.buttonLink}>{t.insights.compareWeek}</Link>
+        <Link to={compare("month")} className={s.buttonLink}>{t.insights.compareMonth}</Link>
+      </div>
     <div className={s.chartGrid}>
       {numeric.map(({ row, prop }) => (
         <MiniChart key={`${row.feature_name}:${prop}`} tid={tid} id={id} row={row} prop={prop} />
       ))}
       {numeric.length === 0 && <p className={s.sub}>{t.devices.noHistory}</p>}
     </div>
+    </>
   );
 }
 

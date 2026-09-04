@@ -23,7 +23,9 @@ from apps.tenants.permissions import (
 )
 
 from . import history as history_mod
+from . import insights as insights_mod
 from . import labels as label_dict
+from . import overview as overview_mod
 from . import services
 from .models import Device, DeviceMode
 
@@ -284,6 +286,31 @@ class HistoryMultiView(APIView):
                 )
             )
         return Response({"results": results, "count": len(results)})
+
+
+class DeviceInsightsView(APIView):
+    """„Co się zmieniło”: last 7/30 days vs the previous window (docs/04)."""
+
+    @extend_schema(responses={200: None})
+    def get(self, request: Request, tenant_id: str, device_id: str) -> Response:
+        tenant = get_tenant_or_404(request, tenant_id)
+        device = services.get_device_or_404(tenant, device_id)
+        period = request.query_params.get("period", "week")
+        if period not in insights_mod.PERIODS:
+            raise ApiError(
+                "validation_error", "period: week|month", fields={"period": ["week|month"]}
+            )
+        return Response(insights_mod.compute(device, period=period))
+
+
+class AdminOverviewView(APIView):
+    """Operator dashboard: every visible customer's devices, statuses, alerts, budgets."""
+
+    permission_classes = [IsOperator]
+
+    @extend_schema(responses={200: None})
+    def get(self, request: Request) -> Response:
+        return Response(overview_mod.build(request._request))
 
 
 class DeviceMessagesView(APIView):

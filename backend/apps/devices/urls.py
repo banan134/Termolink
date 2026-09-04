@@ -1,10 +1,12 @@
 from django.urls import path
 
 from .api import (
+    AdminOverviewView,
     DeviceDetailView,
     DeviceFeaturesView,
     DeviceHistoryCsvView,
     DeviceHistoryView,
+    DeviceInsightsView,
     DeviceListView,
     DeviceMessagesView,
     DeviceRefreshView,
@@ -14,6 +16,18 @@ from .api import (
 )
 
 urlpatterns = [
+    path("admin/overview", AdminOverviewView.as_view(), name="admin-overview"),
+    path(
+        "tenants/<str:tenant_id>/devices/<str:device_id>/insights",
+        DeviceInsightsView.as_view(),
+        name="device-insights",
+    ),
+    path("admin/overview", AdminOverviewView.as_view(), name="admin-overview"),
+    path(
+        "tenants/<str:tenant_id>/devices/<str:device_id>/insights",
+        DeviceInsightsView.as_view(),
+        name="device-insights",
+    ),
     path("tenants/<str:tenant_id>/devices", DeviceListView.as_view(), name="devices"),
     path(
         "tenants/<str:tenant_id>/devices/<str:device_id>", DeviceDetailView.as_view(), name="device"
