@@ -11,7 +11,8 @@ import { t } from "@/i18n/pl";
 import { ModeChip, StatusChip } from "./StatusChip";
 import { PropertyWidget } from "./Widgets";
 import { ControlTab } from "@/features/control/ControlTab";
-import { formatDateTime, formatValue } from "./format";
+import { formatDateTime, formatValue, propertyLabel } from "./format";
+import { ScheduleView } from "./ScheduleView";
 import { groupLabel, groupRows, hasValues } from "./groups";
 import s from "./devices.module.css";
 
@@ -221,9 +222,19 @@ function GroupRows({ tid, id, label, rows }: { tid: string; id: string; label: s
                   </>
                 )}
               </td>
-              <td className={s.mono}>{prop}</td>
+              <td>
+                <div>{propertyLabel(prop)}</div>
+                <div className={s.mono}>{prop}</div>
+              </td>
               <td className={s.value}>
-                {numeric ? (
+                {p.type === "schedule" || (p.value && typeof p.value === "object" && !Array.isArray(p.value) && isSchedule(p.value)) ? (
+                  <ScheduleView value={p.value} compact />
+                ) : p.value && typeof p.value === "object" ? (
+                  <details>
+                    <summary className={s.sub}>{Array.isArray(p.value) ? t.widgets.listOf(p.value.length) : t.widgets.details}</summary>
+                    <pre className={s.json}>{JSON.stringify(p.value, null, 2)}</pre>
+                  </details>
+                ) : numeric ? (
                   <Link to={`/t/${tid}/devices/${id}/chart?feature=${encodeURIComponent(row.feature_name)}&property=${encodeURIComponent(prop)}`} style={{ color: "var(--accent)" }}>
                     {formatValue(p.value, p.unit)}
                   </Link>
@@ -238,6 +249,11 @@ function GroupRows({ tid, id, label, rows }: { tid: string; id: string; label: s
       })}
     </>
   );
+}
+
+function isSchedule(v: object): boolean {
+  const keys = Object.keys(v);
+  return keys.length > 0 && keys.every((k) => ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].includes(k));
 }
 
 function MessagesTab({ tid, id }: { tid: string; id: string }) {

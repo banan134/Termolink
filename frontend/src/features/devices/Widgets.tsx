@@ -4,13 +4,14 @@ import { Chip } from "@/components/ui";
 import { Sparkline } from "@/features/charts/Sparkline";
 import { unitLabel } from "@/features/charts/chartTheme";
 import { t } from "@/i18n/pl";
-import { formatDateTime, formatValue } from "./format";
+import { formatDateTime, formatValue, propertyLabel } from "./format";
+import { ScheduleView } from "./ScheduleView";
 import s from "./devices.module.css";
 
 /** Generic per-property widget (docs/09 §Karta urządzenia — Przegląd, rendering generyczny). */
 export function PropertyWidget({ tid, id, row, prop, p }: { tid: string; id: string; row: FeatureRow; prop: string; p: FeatureProperty }) {
   const label = row.label_pl ?? row.feature_name.split(".").slice(-2).join(".");
-  const propLabel = prop === "value" ? "" : ` · ${prop}`;
+  const propLabel = prop === "value" ? "" : ` · ${propertyLabel(prop)}`;
   const explorer = `/t/${tid}/devices/${id}/chart?feature=${encodeURIComponent(row.feature_name)}&property=${encodeURIComponent(prop)}`;
 
   if (p.type === "number" && typeof p.value === "number") {
@@ -47,10 +48,9 @@ export function PropertyWidget({ tid, id, row, prop, p }: { tid: string; id: str
     const total = days.reduce((n, [, entries]) => n + (Array.isArray(entries) ? entries.length : 0), 0);
     return (
       <div className={s.tileStatic}>
-        <div className={s.tileValue} style={{ fontSize: "var(--fs-md)" }}>
-          {t.widgets.scheduleSummary(days.length, total)}
-        </div>
         <div className={s.tileLabel}>{label}</div>
+        <div className={s.sub}>{t.widgets.scheduleSummary(days.length, total)}</div>
+        <ScheduleView value={p.value} compact />
         <div className={s.mono}>{row.feature_name}</div>
       </div>
     );
