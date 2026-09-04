@@ -21,6 +21,12 @@
 - Termolink używa: `https://<domena>/oauth/viessmann/callback` (produkcja) oraz
   `http://localhost:8080/oauth/viessmann/callback` (dev, przez proxy Caddy — `15-local-development.md`) — **oba muszą być wpisane w portalu Viessmann**.
 
+**ZAŁOŻENIE (2026-09-04): `prompt=login` w `/authorize`.** IAM Viessmann pamięta sesję przeglądarki
+(SSO) i przy kolejnym „Podłącz konto” od razu zwraca `code` bez ekranu logowania — operator nie może
+wtedy podłączyć innego konta klienta ze swojej przeglądarki. Termolink dodaje standardowy parametr
+OIDC `prompt=login`; do sprawdzenia, czy IAM go honoruje (jeśli nie: okno prywatne lub wylogowanie
+z ViCare przed podłączeniem — instrukcja w UI).
+
 ## 2. Autoryzacja (OAuth2 Authorization Code + PKCE)
 
 | Element | Wartość | Status |

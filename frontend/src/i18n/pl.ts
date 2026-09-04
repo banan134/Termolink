@@ -191,7 +191,7 @@ export const t = {
     title: "Konto Viessmann",
     connect: "Podłącz konto Viessmann",
     connectHelp:
-      "Zostaniesz przekierowany do logowania Viessmann — zaloguj się kontem ViCare klienta. Po powrocie uruchomi się wykrywanie urządzeń.",
+      "Zostaniesz przekierowany do logowania Viessmann — zaloguj się kontem ViCare klienta. Po powrocie uruchomi się wykrywanie urządzeń. Jeśli przeglądarka pamięta inne konto ViCare, wyloguj się z niego na stronie Viessmann albo użyj okna prywatnego.",
     connectButton: "Podłącz konto",
     label: "Etykieta (opcjonalnie)",
     notConfigured: "Brak VIESSMANN_CLIENT_ID w konfiguracji serwera.",
