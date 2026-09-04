@@ -5,6 +5,8 @@ import { PageTitle } from "@/app/AppLayout";
 import { Alert, EmptyState, Skeleton } from "@/components/ui";
 import { useMe } from "@/features/auth/useMe";
 import { t } from "@/i18n/pl";
+import { Card as UiCard } from "@/components/ui";
+import { DeviceMap } from "./DeviceMap";
 import { ModeChip, StatusChip } from "./StatusChip";
 import { formatDateTime, formatValue } from "./format";
 import s from "./devices.module.css";
@@ -54,6 +56,13 @@ export default function DevicesPage() {
       {devices.isPending && <Skeleton height={120} />}
       {devices.isError && <Alert tone="error">{t.errors.notFound}</Alert>}
       {devices.data?.count === 0 && <EmptyState title={t.devices.empty}>{t.devices.emptyHelp}</EmptyState>}
+      {devices.data && devices.data.results.some((d) => d.lat !== null && d.lon !== null) && (
+        <div className={s.mapCard}>
+          <UiCard title={t.operator.map}>
+            <DeviceMap devices={devices.data.results} linkFor={(d) => `/t/${tid}/devices/${d.id}`} height={280} />
+          </UiCard>
+        </div>
+      )}
       <div className={s.grid}>{devices.data?.results.map((d) => <Card key={d.id} tid={tid} d={d} />)}</div>
     </>
   );

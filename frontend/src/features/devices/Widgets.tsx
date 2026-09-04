@@ -9,7 +9,20 @@ import { ScheduleView } from "./ScheduleView";
 import s from "./devices.module.css";
 
 /** Generic per-property widget (docs/09 §Karta urządzenia — Przegląd, rendering generyczny). */
-export function PropertyWidget({ tid, id, row, prop, p }: { tid: string; id: string; row: FeatureRow; prop: string; p: FeatureProperty }) {
+export function PropertyWidget({ tid, id, row, prop, p, onHide }: { tid: string; id: string; row: FeatureRow; prop: string; p: FeatureProperty; onHide?: () => void }) {
+  return (
+    <div className={s.tileWrap}>
+      <Tile tid={tid} id={id} row={row} prop={prop} p={p} />
+      {onHide && (
+        <button type="button" className={s.hideBtn} title={t.widgets.hide} aria-label={t.widgets.hide} onClick={onHide}>
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+
+function Tile({ tid, id, row, prop, p }: { tid: string; id: string; row: FeatureRow; prop: string; p: FeatureProperty }) {
   const label = row.label_pl ?? row.feature_name.split(".").slice(-2).join(".");
   const propLabel = prop === "value" ? "" : ` · ${propertyLabel(prop)}`;
   const explorer = `/t/${tid}/devices/${id}/chart?feature=${encodeURIComponent(row.feature_name)}&property=${encodeURIComponent(prop)}`;

@@ -8,6 +8,7 @@ import { PageTitle } from "@/app/AppLayout";
 import { Alert, Button, Card, Field } from "@/components/ui";
 import { useMe } from "@/features/auth/useMe";
 import { t } from "@/i18n/pl";
+import { LocationPicker } from "./LocationPicker";
 import s from "./devices.module.css";
 
 /** /t/:tid/devices/:id/settings (docs/09): tenant_admin edits name/location/description;
@@ -21,6 +22,7 @@ export default function DeviceSettingsPage() {
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
+  const [coords, setCoords] = useState<{ lat: number | null; lon: number | null }>({ lat: null, lon: null });
   const [mode, setMode] = useState<DeviceMode>("read");
   const [interval, setInterval] = useState("");
   const [limit, setLimit] = useState("10");
@@ -29,6 +31,7 @@ export default function DeviceSettingsPage() {
     if (device.data) {
       setName(device.data.display_name);
       setLocation(device.data.location_text ?? "");
+      setCoords({ lat: device.data.lat, lon: device.data.lon });
       setDescription(device.data.description ?? "");
       setMode(device.data.mode);
       setInterval(device.data.poll_interval_s ? String(device.data.poll_interval_s) : "");
@@ -43,6 +46,8 @@ export default function DeviceSettingsPage() {
       return devicesApi.patch(tid, id, {
         display_name: name,
         location_text: location || null,
+        lat: coords.lat,
+        lon: coords.lon,
         description: description || null,
         ...(operator ? { mode, poll_interval_s: interval ? Number(interval) : null, commands_per_hour_limit: Number(limit) } : {}),
       });
@@ -94,6 +99,7 @@ export default function DeviceSettingsPage() {
           {err && !needsReauth && <Alert tone="error">{err.message}</Alert>}
           <Field label={t.devices.name} value={name} onChange={(e) => setName(e.target.value)} required />
           <Field label={t.devices.location} value={location} onChange={(e) => setLocation(e.target.value)} />
+          <LocationPicker value={coords} onChange={setCoords} />
           <Field label={t.devices.description} value={description} onChange={(e) => setDescription(e.target.value)} />
           {operator && (
             <>

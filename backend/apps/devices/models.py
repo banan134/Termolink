@@ -33,6 +33,8 @@ class Device(models.Model):
     display_name = models.TextField()
     description = models.TextField(null=True, blank=True)  # noqa: DJ001
     location_text = models.TextField(null=True, blank=True)  # noqa: DJ001
+    # ["feature.property", ...] hidden on the overview/charts tabs (tenant_admin/operator)
+    hidden_widgets = models.JSONField(default=list, blank=True)
     lat = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     lon = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     mode = models.TextField(choices=DeviceMode.choices, default=DeviceMode.READ)

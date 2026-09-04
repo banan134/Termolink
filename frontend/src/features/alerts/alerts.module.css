@@ -1,7 +1,7 @@
-.sub { color: var(--fg-muted); font-size: var(--fs-sm); margin: 0; }
+.sub { color: var(--text-muted); font-size: var(--fs-sm); margin: 0; }
 .header { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-bottom: var(--sp-3); }
 .toggle { display: flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-sm); cursor: pointer; }
-.buttonLink { display: inline-flex; align-items: center; padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-md); border: 1px solid var(--border); color: var(--fg); text-decoration: none; font-size: var(--fs-sm); background: var(--bg-elevated); }
+.buttonLink { display: inline-flex; align-items: center; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); border: 1px solid var(--border); color: var(--text); text-decoration: none; font-size: var(--fs-sm); background: var(--surface); }
 .list { display: grid; gap: var(--sp-2); }
 .item { display: flex; gap: var(--sp-3); align-items: center; border-left: 4px solid var(--border); padding-left: var(--sp-3); }
 .sev_critical { border-left-color: var(--danger); }
@@ -15,11 +15,11 @@
 .message { font-size: var(--fs-md); }
 .pager { display: flex; gap: var(--sp-2); align-items: center; justify-content: center; margin-top: var(--sp-3); }
 .linkButton { background: none; border: none; color: var(--accent); cursor: pointer; font: inherit; }
-.linkButton:disabled { color: var(--fg-muted); cursor: default; }
+.linkButton:disabled { color: var(--text-muted); cursor: default; }
 .form { display: grid; gap: var(--sp-2); }
 .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-2); }
 .field { display: grid; gap: 4px; }
-.select { background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--sp-2); font: inherit; }
+.select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--r-sm); padding: var(--sp-2); font: inherit; }
 .actions { display: flex; gap: var(--sp-2); justify-content: flex-end; align-items: center; }
 .rule { display: flex; gap: var(--sp-3); align-items: center; padding: var(--sp-2) 0; border-bottom: 1px solid var(--border); }
 .rule:last-child { border-bottom: none; }
