@@ -223,8 +223,9 @@ def delete_tenant(request: HttpRequest, *, actor: User, tenant: Tenant) -> None:
     from apps.providers.models import ProviderAccount
 
     with system_context(), connection.cursor() as cursor:
-        cursor.execute("DELETE FROM feature_values WHERE tenant_id = %s", [tenant_id])
+        cursor.execute("DELETE FROM feature_values_rls WHERE tenant_id = %s", [tenant_id])
         cursor.execute("UPDATE audit_log SET tenant_id = NULL WHERE tenant_id = %s", [tenant_id])
+        # (feature_values itself is not granted to the app role — only the *_rls view; docs/03)
         # PROTECT foreign keys (devices → accounts, users → tenant): explicit order
         Device.objects.filter(tenant=tenant).delete()
         ProviderAccount.objects.filter(tenant=tenant).delete()
